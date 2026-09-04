@@ -1,0 +1,14 @@
+.pio/
+.vscode/*
+!.vscode/extensions.json
+*.code-workspace
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
+include/secrets.h
+platformio.local.ini
+*.log
+tests/touch_test
+tests/touch_test.exe
