@@ -1,6 +1,6 @@
 # ESP32-Klipper-Touchdisplay – Projektdokumentation
 
-Stand: 06.09.2026 · Version 0.6 · Status: Hosttests und vollständiger PlatformIO-Build bestanden; Hardwaretest offen
+Stand: 07.09.2026 · Version 0.8 · Status: Erster vollständiger Hardwaretest bestanden
 
 ## 1. Ziel und Geltungsbereich
 
@@ -43,9 +43,9 @@ Die drei PNG-Dateien sind lesbar. Die anfänglich gemeldeten fehlenden Bildpfade
 | Merkmal | Stand | Beleg |
 |---|---|---|
 | MCU/Modul | ESP32-S3; Schaltplansymbol nennt N16R8-Variante | 2.png und Board-PDF |
-| Flash / PSRAM | 16 MB / 8 MB laut Unterlagen; beim Start auslesen | Board-PDF |
+| Flash / PSRAM | 16 MB / 8 MB am Gerät bestätigt | Bootlog vom 07.09.2026 |
 | Panel | 480 × 480, ST7701, RGB-Datenbus mit serieller Initialisierung | PDF und 2.png |
-| Touch | Kapazitiv über I²C; GT911 durch Herstellerdemo belegt, noch nicht am Gerät bestätigt | 2.png; touch.h im Herstellerdemo |
+| Touch | Kapazitiv über I²C; GT911 am Gerät auf Adresse 0x5D erkannt | Bootlog vom 07.09.2026 |
 | Backlight | GPIO38 | Excel, 1.png |
 | USB-C | USB-UART über CH340C an GPIO43/44 laut Schaltplan | 1.png |
 | Versorgung | 5 V am vorgesehenen Eingang | PDF, 1.png |
@@ -189,7 +189,7 @@ Später zur Moonraker-Anbindung: Host/IP und Port, relevante Moonraker-Konfigura
 | D04 | Vorgeschlagen: MVP ohne SD, Audio, Relais | Für tägliche Druckerbedienung zunächst unnötig |
 | D05 | Vorgeschlagen: Status vor Aktionen | Zustandsabhängige Bedienung zuverlässig umsetzen |
 
-Teststatus 06.09.2026: Dokumente, Bibliotheksmetadaten und relevante Demoquellen geprüft. Hosttests und vollständiger PlatformIO-Build bestanden. Hardware-, Netzwerk- und Druckertests sind noch nicht durchgeführt. GT911 ist im Demo konfiguriert; tatsächliche Speicherbestückung, Touch-Erkennung und mechanische Maße sind am Gerät zu bestätigen.
+Teststatus 07.09.2026: Dokumente, Bibliotheksmetadaten und relevante Demoquellen geprüft. Hosttests, vollständiger PlatformIO-Build und erster Hardwaretest bestanden. Firmware-Upload, Bootdiagnose, Bild, Farben, Touch, Ecktasten, Loslassen und Backlight funktionieren. 16 MB Flash, 8 MB PSRAM und GT911 auf Adresse 0x5D sind am Gerät bestätigt. Der Zehn-Minuten-Lauf blieb ohne Reset, Speicherverlust, Touch-Ausfall oder I²C-Fehler. Netzwerk- und Druckertests wurden noch nicht durchgeführt.
 
 Änderungsprotokoll: Version 0.1 – neun Quelldateien gesichtet, GPIO-Tabelle konsolidiert, Dokumentwidersprüche erfasst, MVP und Meilensteine vorgeschlagen. Künftige Änderungen erhalten Datum, Beleg und Teststatus; bestätigte Ergebnisse ersetzen offene Annahmen.
 
@@ -332,3 +332,18 @@ Die lokale PlatformIO-Installation war zunächst unvollständig: In der virtuell
 Der erfolgreiche Build bestätigt Compiler-, Bibliotheks- und Linkkompatibilität, aber nicht die elektrische oder funktionale Eignung am Gerät. Nächster Schritt: Display per USB-Datenkabel anschließen, COM-Port prüfen, Firmware hochladen, seriellen Bootlog aufzeichnen und die Abnahme in `docs/Hardwaretest.md` durchführen.
 
 Änderungsprotokoll 0.6 / 06.09.2026: Ersten vollständigen PlatformIO-Build bestanden; Speicherbelegung und lokale Toolchain-Reparatur dokumentiert; Repository-Verbindung bestätigt. Hardwaretest bleibt offen.
+
+
+## 19. Erster Upload und Bootdiagnose
+
+Am 07.09.2026 wurde die Hardwaretest-Firmware über den vom System erkannten Port COM5 auf das angeschlossene Display geschrieben. `esptool.py` identifizierte einen ESP32-S3 Revision v0.2. Bootloader, Partitionstabelle und Firmware wurden mit 460800 Baud übertragen; die Hashprüfung aller geschriebenen Daten war erfolgreich. Anschließend erfolgte ein automatischer Hardware-Reset.
+
+Der serielle Bootlog bei 115200 Baud bestätigt Arduino-ESP32 2.0.11, 16777216 Bytes Flash und 8386279 Bytes nutzbare PSRAM-Größe. Der GT911 wurde auf I²C-Adresse 0x5D mit Produktkennung 911 erkannt. Die Firmware erreichte den Zustand `Bereit`; der interne LVGL-Zeichenpuffer umfasst 28800 Bytes. Nach zehn Sekunden blieben freier Heap mit 267432 Bytes und freie PSRAM mit 7925019 Bytes stabil, der Touchstatus war `OK` und der I²C-Fehlerzähler stand auf 0.
+
+Damit sind Flashweg, Speichererkennung, Firmwarestart und grundlegende Touch-Kommunikation bestätigt. Der Nutzer bestätigte anschließend die korrekte Darstellung der dunklen Testoberfläche und der vier Farbfelder Rot, Grün, Blau und Weiß. Auch alle vier Ecktasten, gültige Koordinaten, korrekte räumliche Zuordnung, Klickzähler und Loslassen wurden bestätigt. Helligkeitsregler, kurzzeitiges Ausschalten und automatische Rückkehr funktionieren ebenfalls.
+
+Der abschließende serielle Stabilitätstest lief nach einem definierten Neustart bis Uptime 610 Sekunden. Während des gesamten Laufs blieben der freie Heap bei 267432 Bytes und die freie PSRAM bei 7925019 Bytes konstant. Der Touchstatus blieb `OK`, der I²C-Fehlerzähler blieb 0 und es trat kein weiterer Reset auf. Der erste vollständige Hardwaretest ist damit bestanden.
+
+Änderungsprotokoll 0.7 / 07.09.2026: Ersten Firmware-Upload und seriellen Boottest bestanden; ESP32-S3 Revision, Flash, PSRAM und GT911 am Gerät bestätigt. Visuelle und interaktive Hardwareabnahme gestartet.
+
+Änderungsprotokoll 0.8 / 07.09.2026: Bild-, Farb-, Touch-, Ecktasten-, Loslass- und Backlight-Prüfung bestanden; Zehn-Minuten-Stabilitätstest ohne Reset, Speicherverlust oder I²C-Fehler abgeschlossen. Erster Hardwaretest vollständig bestanden.

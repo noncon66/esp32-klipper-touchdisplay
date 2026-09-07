@@ -29,3 +29,9 @@ Bei spiegelverkehrtem Touch zunächst ein Foto der Anzeige und beobachtete Koord
 
 Falls GT911 nicht erkannt wird, laufen Anzeige und Diagnose weiter. Alle zwei Sekunden werden die Adressen 0x5D und 0x14 erneut auf die Produktkennung 911 geprüft. Reset- und Interruptleitungen werden nicht vom ESP32 angesteuert. Die Controllerkonfiguration wird nicht umgeschrieben.
 
+## 3. Testergebnis vom 07.09.2026
+
+Der vollständige Hardwaretest wurde bestanden. Bestätigt wurden 16 MB Flash, rund 8 MB PSRAM, GT911 auf Adresse 0x5D, korrekte Farben und Bilddarstellung, alle vier Ecktasten, gültige und richtig zugeordnete Touchkoordinaten, Loslassen sowie Helligkeitsregelung und automatische Backlight-Rückkehr.
+
+Der serielle Stabilitätstest lief bis Uptime 610 Sekunden ohne Reset. Freier Heap blieb bei 267432 Bytes, freie PSRAM bei 7925019 Bytes, Touchstatus bei `OK` und der I²C-Fehlerzähler bei 0. Stabilität unter WLAN-Last ist nicht Bestandteil dieses Tests und bleibt für die spätere Moonraker-Integration offen.
+

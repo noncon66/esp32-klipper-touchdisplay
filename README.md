@@ -67,6 +67,6 @@ Die Dokumentation bleibt ein lebendes Projektdokument und wird unter `docs/ESP32
 
 ## Prüfung und nächster Schritt
 
-Der Touch-Treiber wurde auf dem Host mit simuliertem I²C getestet. Der vollständige PlatformIO-Build wurde am 06.09.2026 erfolgreich abgeschlossen. Der Hardwaretest ist noch offen. Details in `docs/VALIDIERUNG.md`.
+Der Touch-Treiber wurde auf dem Host mit simuliertem I²C getestet. Vollständiger PlatformIO-Build und erster Hardwaretest wurden erfolgreich abgeschlossen. Am Gerät bestätigt sind 16 MB Flash, rund 8 MB PSRAM, GT911 auf Adresse 0x5D, Bild, Farben, Touch und Backlight. Der Zehn-Minuten-Lauf blieb ohne Reset oder I²C-Fehler und mit konstanten Speicherwerten. Details in `docs/VALIDIERUNG.md`.
 
 Nach erfolgreichem Build und Upload die Prüfschritte in `docs/Hardwaretest.md` durchführen. Bitte Bootlog und Ergebnis der vier Ecktasten zurückmelden.
