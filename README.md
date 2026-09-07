@@ -1,8 +1,8 @@
 # ESP32-Klipper-Touchdisplay
 
-Hardwaretest 0.1.1 · Windows, VS Code und PlatformIO · GUITION ESP32-4848S040C_I
+Firmwarebasis 0.2.0 · Windows, VS Code und PlatformIO · GUITION ESP32-4848S040C_I
 
-Eigene lokale Touchoberfläche für den Ender-3 mit Klipper. Diese erste Firmware testet nur Display, Touch und Backlight. WLAN/Moonraker und Druckeraktionen folgen später.
+Eigene lokale Touchoberfläche für den Ender-3 mit Klipper. Die aktuelle modulare Firmwarebasis enthält eine Hardwaretestseite und eine Systemdiagnoseseite. WLAN/Moonraker und Druckeraktionen folgen später.
 
 ## Start unter Windows
 
@@ -49,7 +49,9 @@ Quellen für die Konfiguration: [PlatformIO-Plattformmanifest v6.4.0](https://gi
 
 | Pfad | Inhalt |
 |---|---|
-| src/main.cpp | Testoberfläche und Hardwareinitialisierung |
+| src/main.cpp | Anwendungsstart, zyklische Dienste und Statuslogging |
+| include/BoardHardware.h und src/BoardHardware.cpp | Display, Touch, Backlight und LVGL-Treiberanbindung |
+| include/HardwareTestUi.h und src/HardwareTestUi.cpp | Hardwaretest- und Systemdiagnoseseite mit Navigation |
 | include/SafeGT911.h | geprüfte Touch-Lesezugriffe, Fehlerbehandlung |
 | include/lv_conf.h | LVGL-Konfiguration |
 | lib/lvgl und lib/Arduino_GFX | Herstellerbibliotheken mit vorhandenen Lizenzdateien |
@@ -67,6 +69,6 @@ Die Dokumentation bleibt ein lebendes Projektdokument und wird unter `docs/ESP32
 
 ## Prüfung und nächster Schritt
 
-Der Touch-Treiber wurde auf dem Host mit simuliertem I²C getestet. Vollständiger PlatformIO-Build und erster Hardwaretest wurden erfolgreich abgeschlossen. Am Gerät bestätigt sind 16 MB Flash, rund 8 MB PSRAM, GT911 auf Adresse 0x5D, Bild, Farben, Touch und Backlight. Der Zehn-Minuten-Lauf blieb ohne Reset oder I²C-Fehler und mit konstanten Speicherwerten. Details in `docs/VALIDIERUNG.md`.
+Der Touch-Treiber wurde auf dem Host mit simuliertem I²C getestet. Vollständiger PlatformIO-Build, erster Hardwaretest und die modulare Firmwarebasis 0.2.0 wurden erfolgreich abgeschlossen. Am Gerät bestätigt sind 16 MB Flash, rund 8 MB PSRAM, GT911 auf Adresse 0x5D, Bild, Farben, Touch, Backlight sowie beide LVGL-Seiten und deren Navigation. Details in `docs/VALIDIERUNG.md`.
 
 Nach erfolgreichem Build und Upload die Prüfschritte in `docs/Hardwaretest.md` durchführen. Bitte Bootlog und Ergebnis der vier Ecktasten zurückmelden.

@@ -1,6 +1,6 @@
 # ESP32-Klipper-Touchdisplay – Projektdokumentation
 
-Stand: 07.09.2026 · Version 0.8 · Status: Erster vollständiger Hardwaretest bestanden
+Stand: 07.09.2026 · Version 0.9 · Status: Modulare Firmwarebasis 0.2.0 auf Hardware bestätigt
 
 ## 1. Ziel und Geltungsbereich
 
@@ -94,8 +94,8 @@ Vorgesehene Softwaremodule:
 
 | Modul | Verantwortung |
 |---|---|
-| board | Pins, Displayinitialisierung, Touch, Backlight |
-| ui | LVGL-Seiten, Navigation und Benutzeraktionen |
+| board | Als `BoardHardware` umgesetzt: Pins, Displayinitialisierung, Touch und Backlight |
+| ui | Als `HardwareTestUi` umgesetzt: zwei LVGL-Seiten, Navigation und Testaktionen |
 | printer_state | Zusammengeführter Druckerzustand und Gültigkeit der Daten |
 | moonraker_client | Verbindung, Authentifizierung, Anfragen und Statusupdates |
 | actions | Erlaubte Aktionen, Bestätigung und Rückmeldung |
@@ -347,3 +347,16 @@ Der abschließende serielle Stabilitätstest lief nach einem definierten Neustar
 Änderungsprotokoll 0.7 / 07.09.2026: Ersten Firmware-Upload und seriellen Boottest bestanden; ESP32-S3 Revision, Flash, PSRAM und GT911 am Gerät bestätigt. Visuelle und interaktive Hardwareabnahme gestartet.
 
 Änderungsprotokoll 0.8 / 07.09.2026: Bild-, Farb-, Touch-, Ecktasten-, Loslass- und Backlight-Prüfung bestanden; Zehn-Minuten-Stabilitätstest ohne Reset, Speicherverlust oder I²C-Fehler abgeschlossen. Erster Hardwaretest vollständig bestanden.
+
+
+## 20. Modulare Firmwarebasis 0.2.0
+
+Am 07.09.2026 wurde die bisherige monolithische Testfirmware in eine modulare Basis überführt. `BoardHardware` kapselt Displaybus, ST7701-Initialisierung, LVGL-Treiberregistrierung, GT911, Wiedererkennung und Backlight. `HardwareTestUi` enthält die LVGL-Objekte, Ereignisbehandlung und Aktualisierung der Anzeige. `main.cpp` beschränkt sich auf Initialisierung, zyklische Dienste, LVGL-Ausführung und serielles Statuslogging.
+
+Zusätzlich zur bestehenden Display- und Touchtestseite wurde eine Systemdiagnoseseite ergänzt. Sie zeigt Firmwarestand, GT911-Verbindung und Adresse, I²C-Fehler, Flash, PSRAM, freien Heap, freie PSRAM, Laufzeit und Helligkeit. Animierte Schaltflächen wechseln zwischen beiden Seiten.
+
+Der vollständige PlatformIO-Build war erfolgreich. Firmware 0.2.0 benötigt 499413 Bytes Flash von 3342336 Bytes (14,9 %) und 86812 Bytes statischen RAM von 327680 Bytes (26,5 %). Der Upload über COM5 und der Boot auf dem ESP32-S3 waren erfolgreich; GT911 wurde auf 0x5D erkannt und der I²C-Fehlerzähler blieb 0.
+
+Der Nutzer bestätigte auf der Hardware beide Seiten, die korrekte Live-Diagnose, flüssige Navigation in beide Richtungen sowie die unveränderte Funktion von Touchtest, Ecktasten und Helligkeitssteuerung. Damit ist Schritt 3 der Umsetzungsplanung abgeschlossen. Als Nächstes folgt Schritt 4: WLAN und Moonraker zunächst nur lesend anbinden, einen lokalen Druckerzustand aufbauen und Verbindungsabbruch sowie Reconnect testen.
+
+Änderungsprotokoll 0.9 / 07.09.2026: Hardware- und UI-Code modularisiert; zweite LVGL-Systemdiagnoseseite ergänzt; Build, Upload, Boot und Navigation auf Hardware bestanden. Firmwarebasis 0.2.0 und Projektschritt 3 abgeschlossen.

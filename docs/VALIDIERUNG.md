@@ -20,6 +20,9 @@ Stand: 07.09.2026.
 - Nutzer bestätigt alle vier Ecktasten an der richtigen Position, Klickzähler, gültigen Koordinatenbereich und korrektes Loslassen.
 - Nutzer bestätigt funktionierenden Helligkeitsregler sowie Ausschalten und automatische Rückkehr der Beleuchtung nach etwa 1,5 Sekunden.
 - Zehn-Minuten-Stabilitätstest bis Uptime 610 Sekunden bestanden: kein Reset, Heap konstant bei 267432 Bytes, freie PSRAM konstant bei 7925019 Bytes, Touch durchgehend `OK` und I²C-Fehlerzähler 0.
+- Modulare Firmwarebasis 0.2.0 vollständig gebaut und über COM5 hochgeladen: 499413 Bytes Flash (14,9 %) und 86812 Bytes statischer RAM (26,5 %).
+- Boot der modularen Firmware bestanden: 16 MB Flash, rund 8 MB PSRAM, GT911 auf 0x5D, Touchstatus `OK` und keine I²C-Fehler.
+- Nutzer bestätigt Testseite, Systemdiagnoseseite, korrekte Livewerte, flüssige Navigation in beide Richtungen sowie unveränderte Touch- und Backlight-Funktion.
 
 Hosttest reproduzieren (Linux mit g++ oder entsprechend eingerichteter C++-Umgebung):
 
