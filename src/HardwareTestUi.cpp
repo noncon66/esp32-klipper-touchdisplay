@@ -10,11 +10,13 @@ void styleScreen(lv_obj_t *screen) {
 }
 }  // namespace
 
-void HardwareTestUi::begin(BoardHardware &board) {
+void HardwareTestUi::begin(BoardHardware &board, PrinterState &printerState) {
   board_ = &board;
+  printerState_ = &printerState;
+  createPrinterScreen();
   createTestScreen();
   createSystemScreen();
-  lv_scr_load(testScreen_);
+  lv_scr_load(printerScreen_);
 }
 
 void HardwareTestUi::update(uint32_t now) {
@@ -40,13 +42,78 @@ void HardwareTestUi::update(uint32_t now) {
                         "Uptime: %lu s\nHelligkeit: %u / 255",
                         static_cast<unsigned long>(now / 1000),
                         board_->brightness());
+
+  lv_label_set_text_fmt(connectionLabel_,
+                        "WLAN: %s\nMoonraker: %s\nKlipper: %s",
+                        linkStateText(printerState_->wifi),
+                        linkStateText(printerState_->moonraker),
+                        klipperStateText(printerState_->klipper));
+  if (printerState_->extruder.actualValid &&
+      printerState_->extruder.targetValid) {
+    lv_label_set_text_fmt(extruderLabel_, "HOTEND\n%d / %d C",
+                          static_cast<int>(printerState_->extruder.actual + 0.5f),
+                          static_cast<int>(printerState_->extruder.target + 0.5f));
+  } else {
+    lv_label_set_text(extruderLabel_, "HOTEND\n-- / -- C");
+  }
+  if (printerState_->bed.actualValid && printerState_->bed.targetValid) {
+    lv_label_set_text_fmt(bedLabel_, "HEIZBETT\n%d / %d C",
+                          static_cast<int>(printerState_->bed.actual + 0.5f),
+                          static_cast<int>(printerState_->bed.target + 0.5f));
+  } else {
+    lv_label_set_text(bedLabel_, "HEIZBETT\n-- / -- C");
+  }
+  lv_label_set_text_fmt(printLabel_, "Druckstatus: %s",
+                        printStateText(printerState_->print));
+  lv_label_set_text(filenameLabel_,
+                    printerState_->filenameValid && !printerState_->filename.isEmpty()
+                        ? printerState_->filename.c_str()
+                        : "Keine Druckdatei");
+  int progress = printerState_->progressValid
+                     ? static_cast<int>(printerState_->progress * 100.0f + 0.5f)
+                     : 0;
+  if (progress < 0) progress = 0;
+  if (progress > 100) progress = 100;
+  lv_bar_set_value(progressBar_, progress, LV_ANIM_OFF);
+  if (printerState_->stale) {
+    lv_label_set_text_fmt(freshnessLabel_,
+                          "Daten nicht aktuell | Protokollfehler: %lu",
+                          static_cast<unsigned long>(printerState_->protocolErrors));
+  } else {
+    lv_label_set_text_fmt(freshnessLabel_,
+                          "Fortschritt: %d %% | Aktualisiert vor %lu s",
+                          progress,
+                          static_cast<unsigned long>(
+                              (now - printerState_->lastUpdateMs) / 1000));
+  }
+}
+
+void HardwareTestUi::createPrinterScreen() {
+  printerScreen_ = lv_obj_create(nullptr);
+  styleScreen(printerScreen_);
+  label(printerScreen_, "KLIPPER STATUS", 168, 24);
+  connectionLabel_ = label(printerScreen_, "Verbindung wird geprueft ...", 24, 62);
+  extruderLabel_ = label(printerScreen_, "HOTEND\n-- / -- C", 24, 146);
+  bedLabel_ = label(printerScreen_, "HEIZBETT\n-- / -- C", 260, 146);
+  printLabel_ = label(printerScreen_, "Druckstatus: unbekannt", 24, 226);
+  filenameLabel_ = label(printerScreen_, "Keine Druckdatei", 24, 260);
+  lv_obj_set_width(filenameLabel_, 432);
+  lv_label_set_long_mode(filenameLabel_, LV_LABEL_LONG_DOT);
+  progressBar_ = lv_bar_create(printerScreen_);
+  lv_obj_set_pos(progressBar_, 24, 304);
+  lv_obj_set_size(progressBar_, 432, 24);
+  lv_bar_set_range(progressBar_, 0, 100);
+  freshnessLabel_ = label(printerScreen_, "Daten nicht aktuell", 24, 344);
+  button(printerScreen_, "HARDWARETEST", 24, 400, 208, 48, showTest);
+  button(printerScreen_, "SYSTEM", 248, 400, 208, 48, showSystem);
 }
 
 void HardwareTestUi::createTestScreen() {
   testScreen_ = lv_obj_create(nullptr);
   styleScreen(testScreen_);
   label(testScreen_, "DISPLAY + TOUCHTEST", 118, 26);
-  button(testScreen_, "SYSTEM", 190, 61, 100, 38, showSystem);
+  button(testScreen_, "STATUS", 135, 61, 100, 38, showPrinter);
+  button(testScreen_, "SYSTEM", 245, 61, 100, 38, showSystem);
   statusLabel_ = label(testScreen_, "Touch wird geprueft ...", 24, 108);
   coordinateLabel_ = label(testScreen_, "X: ---   Y: ---   losgelassen", 24, 138);
   counterLabel_ = label(testScreen_, "Tastendruecke: 0", 24, 166);
@@ -83,11 +150,12 @@ void HardwareTestUi::createSystemScreen() {
   systemScreen_ = lv_obj_create(nullptr);
   styleScreen(systemScreen_);
   label(systemScreen_, "SYSTEMDIAGNOSE", 155, 30);
-  label(systemScreen_, "Firmware 0.2.0", 178, 66);
+  label(systemScreen_, "Firmware 0.3.0", 178, 66);
   systemTouchLabel_ = label(systemScreen_, "Touch wird gelesen ...", 38, 120);
   systemMemoryLabel_ = label(systemScreen_, "Speicher wird gelesen ...", 230, 120);
   systemUptimeLabel_ = label(systemScreen_, "Laufzeit wird gelesen ...", 38, 260);
-  button(systemScreen_, "< ZURUECK ZUM TEST", 110, 376, 260, 58, showTest);
+  button(systemScreen_, "STATUS", 24, 376, 208, 58, showPrinter);
+  button(systemScreen_, "HARDWARETEST", 248, 376, 208, 58, showTest);
 }
 
 void HardwareTestUi::resetTargets() {
@@ -144,6 +212,12 @@ void HardwareTestUi::blinkLight(lv_event_t *event) {
 
 void HardwareTestUi::resetPressed(lv_event_t *event) {
   fromEvent(event)->resetTargets();
+}
+
+void HardwareTestUi::showPrinter(lv_event_t *event) {
+  auto *ui = fromEvent(event);
+  lv_scr_load_anim(ui->printerScreen_, LV_SCR_LOAD_ANIM_FADE_ON,
+                   180, 0, false);
 }
 
 void HardwareTestUi::showSystem(lv_event_t *event) {

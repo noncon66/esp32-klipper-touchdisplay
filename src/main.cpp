@@ -8,20 +8,25 @@
 
 #include "BoardHardware.h"
 #include "HardwareTestUi.h"
+#include "MoonrakerClient.h"
+#include "PrinterState.h"
 
 BoardHardware board;
 HardwareTestUi ui;
+PrinterState printerState;
+MoonrakerClient moonraker;
 bool ready = false;
 
 void setup() {
   Serial.begin(115200);
   delay(500);
-  Serial.println("\nESP32-Klipper Hardwarebasis 0.2.0 / Core 2.0.11");
+  Serial.println("\nESP32-Klipper Statusclient 0.3.0 / Core 2.0.11");
   Serial.printf("Flash: %u Bytes, PSRAM: %u Bytes, freier Heap: %u Bytes\n",
                 ESP.getFlashChipSize(), ESP.getPsramSize(), ESP.getFreeHeap());
 
   if (!board.begin()) return;
-  ui.begin(board);
+  ui.begin(board, printerState);
+  moonraker.begin(printerState);
   ready = true;
   Serial.printf("Bereit. Zeichenpuffer: %u Bytes, freier Heap: %u\n",
                 unsigned(BoardHardware::width * BoardHardware::bufferLines *
@@ -38,15 +43,18 @@ void loop() {
 
   const uint32_t now = millis();
   board.service(now);
+  moonraker.loop(now);
   lv_timer_handler();
   ui.update(now);
 
   if (uint32_t(now - lastLog) >= 5000) {
     lastLog = now;
-    Serial.printf("Uptime %lus | Heap %u | PSRAM frei %u | Touch %s | Fehler %lu\n",
+    Serial.printf("Uptime %lus | Heap %u | PSRAM frei %u | Touch %s | I2C %lu | WLAN %s | Moonraker %s\n",
                   static_cast<unsigned long>(now / 1000), ESP.getFreeHeap(),
                   ESP.getFreePsram(), board.touchOnline() ? "OK" : "OFFLINE",
-                  static_cast<unsigned long>(board.touchErrors()));
+                  static_cast<unsigned long>(board.touchErrors()),
+                  linkStateText(printerState.wifi),
+                  linkStateText(printerState.moonraker));
   }
   delay(5);
 }

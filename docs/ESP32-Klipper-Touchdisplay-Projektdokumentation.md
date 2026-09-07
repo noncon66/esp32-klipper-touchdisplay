@@ -1,6 +1,6 @@
 # ESP32-Klipper-Touchdisplay – Projektdokumentation
 
-Stand: 07.09.2026 · Version 0.9 · Status: Modulare Firmwarebasis 0.2.0 auf Hardware bestätigt
+Stand: 07.09.2026 · Version 1.0 · Status: Read-only-Moonraker-Anbindung mit Firmware 0.3.0 bestätigt
 
 ## 1. Ziel und Geltungsbereich
 
@@ -12,7 +12,7 @@ Diese Datei führt den technischen Arbeitsstand, Entscheidungen, offene Punkte u
 
 Laut Projektübersicht: Ender-3 Classic, BTT SKR Mini E3 V3.0, Raspberry Pi 4, Klipper/Moonraker/Mainsail, Bowden-Extruder, 0,4-mm-Düse und PEI-Oberfläche. CR Touch und BTT S2DW sind geplant/bestellt; ihr Einbau ist in diesem Projekt noch nicht bestätigt.
 
-Inzwischen liegen zusätzlich Operating instructions.zip, Libraries.zip und das Herstellerdemo 1_2_4.0_LvglWidgets.zip vor. Demoquellen und LVGL-Konfiguration sind geprüft; die Testfirmware wurde am 06.09.2026 vollständig mit PlatformIO kompiliert und gelinkt. Aktuelle Klipper-Konfigurationsdateien stehen noch aus. Es wurde weder Hardware geflasht noch eine Verbindung zum Drucker hergestellt.
+Inzwischen liegen zusätzlich Operating instructions.zip, Libraries.zip und das Herstellerdemo 1_2_4.0_LvglWidgets.zip vor. Demoquellen und LVGL-Konfiguration sind geprüft. Firmware 0.3.0 wurde vollständig mit PlatformIO gebaut, auf die Zielhardware geflasht und read-only mit Moonraker verbunden. Aktuelle Klipper-Konfigurationsdateien und die darin tatsächlich vorhandenen Makros stehen für den nächsten Schritt noch aus.
 
 ## 3. Sichtung der Quelldateien
 
@@ -95,9 +95,9 @@ Vorgesehene Softwaremodule:
 | Modul | Verantwortung |
 |---|---|
 | board | Als `BoardHardware` umgesetzt: Pins, Displayinitialisierung, Touch und Backlight |
-| ui | Als `HardwareTestUi` umgesetzt: zwei LVGL-Seiten, Navigation und Testaktionen |
-| printer_state | Zusammengeführter Druckerzustand und Gültigkeit der Daten |
-| moonraker_client | Verbindung, Authentifizierung, Anfragen und Statusupdates |
+| ui | Als `HardwareTestUi` umgesetzt: Klipper-Status, Hardwaretest, Systemdiagnose und Navigation |
+| printer_state | Als `PrinterState` umgesetzt: zusammengeführter Druckerzustand und Datengültigkeit |
+| moonraker_client | Als `MoonrakerClient` umgesetzt: WLAN, optionale Authentifizierung, Anfragen, Statusupdates und Reconnect |
 | actions | Erlaubte Aktionen, Bestätigung und Rückmeldung |
 | settings | WLAN, Host/Port, Zugangsdaten und Anzeigeoptionen |
 
@@ -118,9 +118,11 @@ Layoutvorschlag: Statusleiste oben, Temperaturkarten und Druckstatus in der Mitt
 
 ## 7. Moonraker-Verhalten
 
-WebSocket über `/websocket` mit JSON-RPC für laufenden Status und Befehle; HTTP kann für Diagnose oder einzelne Abfragen dienen. Konkreter Host, Port und Authentifizierung sind noch offen.
+WebSocket über `/websocket` mit JSON-RPC ist für den laufenden Read-only-Status umgesetzt; HTTP wurde ergänzend zur Diagnose verwendet. Der lokale Zielhost ist als `192.168.178.128:7125` bestätigt. WLAN-Daten und ein optionaler Moonraker-API-Key stehen ausschließlich in der von Git ignorierten Datei `include/secrets.h`; `include/secrets.example.h` dient als Vorlage.
 
-Nach „Klipper ready“ verfügbare Objekte ermitteln und nur vorhandene Objekte abonnieren. Start-Snapshot übernehmen, danach partielle Statusupdates in den lokalen Zustand einarbeiten. Nach Wiederverbindung erneut abonnieren und synchronisieren. Quellen: [API-Einführung](https://moonraker.readthedocs.io/en/latest/external_api/introduction/), [Printer Objects](https://moonraker.readthedocs.io/en/latest/printer_objects/), [Printer Administration](https://moonraker.readthedocs.io/en/latest/external_api/printer/), [Notifications](https://moonraker.readthedocs.io/en/latest/external_api/jsonrpc_notifications/).
+Nach „Klipper ready“ ermittelt der Client die verfügbaren Objekte und abonniert daraus `extruder`, `heater_bed`, `print_stats`, `virtual_sdcard` und `webhooks`. Der Start-Snapshot wird übernommen; partielle `notify_status_update`-Meldungen werden in den lokalen Zustand eingearbeitet. Bei einer Trennung werden Livewerte als ungültig markiert. Nach Wiederverbindung ermittelt und abonniert der Client die Objekte erneut. Quellen: [API-Einführung](https://moonraker.readthedocs.io/en/latest/external_api/introduction/), [Printer Objects](https://moonraker.readthedocs.io/en/latest/printer_objects/), [Printer Administration](https://moonraker.readthedocs.io/en/latest/external_api/printer/), [Notifications](https://moonraker.readthedocs.io/en/latest/external_api/jsonrpc_notifications/).
+
+Beim ersten Gerätetest scheiterte der WebSocket-Handshake trotz erreichbarem Moonraker mit HTTP 403. Ursache war der von arduinoWebSockets voreingestellte Header `Origin: file://`, den Moonraker ablehnte. Der Client entfernt diesen optionalen Default-Header nun explizit; ein konfigurierter `X-Api-Key` bleibt möglich. Danach wurden Verbindung, Abonnement und Liveupdates erfolgreich bestätigt.
 
 | Objektkandidat | Anzeige/Verwendung |
 |---|---|
@@ -169,15 +171,11 @@ Abbruch und Neustart benötigen eindeutige Bestätigung. `SAVE_CONFIG` ist keine
 
 Die Statusintegration liegt bewusst vor den Steueraktionen: Erst mit verlässlichem Druckerzustand kann das Panel passende Bedienfunktionen freigeben.
 
+Stand 07.09.2026: Schritte 1 bis 4 sind abgeschlossen. Beim Reconnect-Test wurde die WLAN-Verbindung des laufenden Panels einmalig getrennt. WLAN und WebSocket wurden ohne Panel-Neustart automatisch wiederhergestellt, die Statusobjekte erneut abonniert und aktuelle Werte wieder angezeigt. Es wurden keine Druckerbefehle gesendet.
+
 ## 10. Noch benötigte Informationen
 
-Für den unmittelbar nächsten Schritt:
-
-1. Scharfe Fotos der tatsächlichen Platinenrückseite, Aufdrucke und Anschlüsse.
-2. Herstellerpaket: erledigt für den Einstieg; Bibliotheken, Widgets-Demo und Buildhinweise liegen vor. Weitere Demoarchive sind zunächst nicht erforderlich.
-3. Entwicklungsrechner: Windows bestätigt. VS Code und PlatformIO sind eingerichtet; der erste vollständige Build wurde am 06.09.2026 erfolgreich abgeschlossen.
-
-Später zur Moonraker-Anbindung: Host/IP und Port, relevante Moonraker-Konfiguration ohne Geheimnisse, `printer.cfg` mit eingebundenen Makros sowie aktueller CR-Touch-Installationsstand. WLAN-Passwörter müssen dafür nicht im Chat geteilt werden.
+Für den unmittelbar nächsten Schritt werden die relevante Moonraker-/Klipper-Konfiguration ohne Geheimnisse und `printer.cfg` einschließlich eingebundener Makrodateien benötigt. Vorheizen und Cooldown werden nur an tatsächlich vorhandene, geprüfte Makros angebunden. Der aktuelle CR-Touch-Installationsstand bleibt erst für den späteren Kalibrierschritt relevant. WLAN-Passwörter müssen nicht im Chat geteilt werden.
 
 ## 11. Entscheidungs- und Testprotokoll
 
@@ -188,8 +186,10 @@ Später zur Moonraker-Anbindung: Host/IP und Port, relevante Moonraker-Konfigura
 | D03 | Vorgeschlagen: C++/LVGL; Arduino für ersten Hardwaretest | Herstellerdemo mit gelieferten Versionen reproduzieren; endgültiges Framework offen |
 | D04 | Vorgeschlagen: MVP ohne SD, Audio, Relais | Für tägliche Druckerbedienung zunächst unnötig |
 | D05 | Vorgeschlagen: Status vor Aktionen | Zustandsabhängige Bedienung zuverlässig umsetzen |
+| D06 | Umgesetzt: lokale Secrets-Datei mit versionierbarer Vorlage | Zugangsdaten bleiben aus Repository und seriellen Logs heraus |
+| D07 | Umgesetzt: dynamisches Read-only-Abonnement | Nur auf dem Drucker vorhandene Statusobjekte werden verwendet |
 
-Teststatus 07.09.2026: Dokumente, Bibliotheksmetadaten und relevante Demoquellen geprüft. Hosttests, vollständiger PlatformIO-Build und erster Hardwaretest bestanden. Firmware-Upload, Bootdiagnose, Bild, Farben, Touch, Ecktasten, Loslassen und Backlight funktionieren. 16 MB Flash, 8 MB PSRAM und GT911 auf Adresse 0x5D sind am Gerät bestätigt. Der Zehn-Minuten-Lauf blieb ohne Reset, Speicherverlust, Touch-Ausfall oder I²C-Fehler. Netzwerk- und Druckertests wurden noch nicht durchgeführt.
+Teststatus 07.09.2026: Dokumente, Bibliotheksmetadaten und relevante Demoquellen geprüft. Hosttests, vollständige PlatformIO-Builds und Hardwaretests bestanden. Firmware-Upload, Bootdiagnose, Bild, Farben, Touch, Ecktasten, Loslassen und Backlight funktionieren. 16 MB Flash, rund 8 MB PSRAM und GT911 auf Adresse 0x5D sind am Gerät bestätigt. Firmware 0.3.0 verbindet sich mit WLAN und Moonraker, zeigt Klipper `bereit` sowie laufend aktualisierte Temperaturen und stellt die Verbindung nach einem WLAN-Abbruch ohne Panel-Neustart wieder her. Druckersteuernde Aktionen wurden noch nicht implementiert oder getestet.
 
 Änderungsprotokoll: Version 0.1 – neun Quelldateien gesichtet, GPIO-Tabelle konsolidiert, Dokumentwidersprüche erfasst, MVP und Meilensteine vorgeschlagen. Künftige Änderungen erhalten Datum, Beleg und Teststatus; bestätigte Ergebnisse ersetzen offene Annahmen.
 
@@ -213,7 +213,7 @@ Widerspruch: In `boards.txt` ist für ESP32S3 Dev Module der Eintrag Huge APP we
 | LVGL | 8.3.9, Metadaten und lvgl.h stimmen überein | Referenz für die GUI |
 | Arduino_GFX | 1.2.9 laut library.properties | ST7701-RGB- und ESP32-RGB-Treiber enthalten; gelieferten Quellstand bewahren |
 | Touch_GT911 | Keine Versionsmetadaten vorhanden | Eigener GT911-Treiber mit zwei Quelldateien |
-| ArduinoJson | 6.17.2 | Später für Moonraker-Nachrichten verwendbar; noch keine Clientimplementierung |
+| ArduinoJson | 6.17.2 | Historischer Lieferstand; die Statusfirmware verwendet fest 6.21.5 aus der PlatformIO Registry |
 | HTTPClient | 1.2 | Mitgelieferte Kopie; Konflikte mit Core-Bibliothek vor Installation prüfen |
 | Time | 1.6.1 | Für den ersten Hardwaretest nicht erforderlich |
 | NtpClientLib | 3.0.2-beta | Für den ersten Hardwaretest nicht erforderlich |
@@ -360,3 +360,22 @@ Der vollständige PlatformIO-Build war erfolgreich. Firmware 0.2.0 benötigt 499
 Der Nutzer bestätigte auf der Hardware beide Seiten, die korrekte Live-Diagnose, flüssige Navigation in beide Richtungen sowie die unveränderte Funktion von Touchtest, Ecktasten und Helligkeitssteuerung. Damit ist Schritt 3 der Umsetzungsplanung abgeschlossen. Als Nächstes folgt Schritt 4: WLAN und Moonraker zunächst nur lesend anbinden, einen lokalen Druckerzustand aufbauen und Verbindungsabbruch sowie Reconnect testen.
 
 Änderungsprotokoll 0.9 / 07.09.2026: Hardware- und UI-Code modularisiert; zweite LVGL-Systemdiagnoseseite ergänzt; Build, Upload, Boot und Navigation auf Hardware bestanden. Firmwarebasis 0.2.0 und Projektschritt 3 abgeschlossen.
+
+
+## 21. Read-only-Moonraker-Status 0.3.0
+
+Am 07.09.2026 wurde Projektschritt 4 umgesetzt und auf der Zielhardware bestätigt. `PrinterState` hält WLAN-, Moonraker-, Klipper- und Druckzustand sowie Temperaturen, Dateiname, Fortschritt, Aktualisierungszeit und Gültigkeitskennzeichen. `MoonrakerClient` betreibt WLAN und WebSocket nicht blockierend im Hauptzyklus. Die Statusseite ist nun die Startseite; Hardwaretest und Systemdiagnose bleiben über große Navigationstasten erreichbar.
+
+Die Firmware fragt nach dem WebSocket-Aufbau zunächst `server.info` ab. Sobald Klipper bereit ist, folgt `printer.objects.list`. Anschließend werden nur vorhandene Objekte mit den benötigten Feldern abonniert. Unterstützt sind derzeit Hotend- und Heizbetttemperatur samt Zielwert, Druckzustand, Dateiname, Fortschritt und Klipper-Zustand. Startdaten und partielle Benachrichtigungen werden in denselben lokalen Zustand eingearbeitet. Dieser Stand enthält bewusst keine Methode zum Auslösen von G-Code, Makros oder anderen Druckeraktionen.
+
+Die lokale Konfiguration ist aufgeteilt: `include/secrets.example.h` ist eine versionierbare Vorlage; die echte Datei `include/secrets.h` wird durch `.gitignore` ausgeschlossen. Der Quellcode und die seriellen Meldungen geben weder WLAN-Namen noch Passwort oder API-Key aus. Als Ziel wurde `192.168.178.128:7125` bestätigt. ArduinoJson 6.21.5 und WebSockets 2.4.1 sind in `platformio.ini` festgelegt. Das zusätzliche Buildskript `scripts/framework_library_paths.py` stellt der älteren WebSockets-Bibliothek die benötigten WiFi-Includepfade aus dem festgelegten Arduino-ESP32-Core portabel bereit.
+
+Beim ersten Liveversuch erhielt der ESP32 eine WLAN-Adresse, der WebSocket wurde jedoch sofort getrennt. Ein unabhängiger HTTP-Test bestätigte Moonraker mit Status 200; ein unabhängiger WebSocket-Test funktionierte ebenfalls. Der gezielte Vergleich zeigte, dass Moonraker den Bibliotheksstandard `Origin: file://` mit HTTP 403 ablehnt. Seit der Client diesen optionalen Header entfernt und kein unnötiges Subprotokoll anfordert, werden WebSocket und Statusabonnement erfolgreich aufgebaut.
+
+Endgültiger Build: 1080145 Bytes Flash von 3342336 Bytes (32,3 %) und 113684 Bytes statischer RAM von 327680 Bytes (34,7 %). Upload über COM5 und Hashprüfung waren erfolgreich. Der Bootlog bestätigt WLAN, Moonraker und Statusabonnement; Touch blieb `OK`, der I²C-Fehlerzähler blieb 0. Der Nutzer bestätigte auf dem Display Klipper-Zustand `bereit` und sauber aktualisierte Hotend-/Heizbetttemperaturen.
+
+Für die Reconnect-Abnahme wurde ausschließlich in einer temporären Testfirmware die WLAN-Verbindung des Panels einmalig getrennt. Das Panel kennzeichnete die Verbindung als getrennt, verband WLAN und WebSocket erneut und abonnierte die Statusobjekte wieder. Bereits bei Uptime 15 Sekunden waren WLAN und Moonraker wieder verbunden; der Heap blieb stabil. Danach wurde der Testauslöser entfernt und der bereinigte Endstand erneut gebaut, hochgeladen und im Bootlog geprüft. Damit ist das Abschlusskriterium von Schritt 4 erfüllt.
+
+Nächster Schritt ist Projektschritt 5: tatsächlich vorhandene Vorheiz- und Cooldown-Makros aus der Klipper-Konfiguration prüfen, eine eng begrenzte Aktionsschnittstelle mit Rückmeldung entwerfen und erst danach steuernde UI-Elemente hinzufügen.
+
+Änderungsprotokoll 1.0 / 07.09.2026: Firmware 0.3.0 mit lokalem Druckerzustand, sicherer Secrets-Vorlage, nicht blockierender WLAN-/Moonraker-Verbindung und dritter LVGL-Statusseite umgesetzt. Origin-403 diagnostiziert und behoben. Livewerte, Verbindungsabbruch, automatische Wiederverbindung, erneutes Abonnement, finaler Build und Upload auf Hardware bestanden. Projektschritt 4 abgeschlossen.

@@ -1,4 +1,4 @@
-# Validierung – Touchtest 0.1.1 (PlatformIO)
+# Validierung – Firmware 0.3.0 (PlatformIO)
 
 Stand: 07.09.2026.
 
@@ -23,6 +23,13 @@ Stand: 07.09.2026.
 - Modulare Firmwarebasis 0.2.0 vollständig gebaut und über COM5 hochgeladen: 499413 Bytes Flash (14,9 %) und 86812 Bytes statischer RAM (26,5 %).
 - Boot der modularen Firmware bestanden: 16 MB Flash, rund 8 MB PSRAM, GT911 auf 0x5D, Touchstatus `OK` und keine I²C-Fehler.
 - Nutzer bestätigt Testseite, Systemdiagnoseseite, korrekte Livewerte, flüssige Navigation in beide Richtungen sowie unveränderte Touch- und Backlight-Funktion.
+- Read-only-Statusclient 0.3.0 vollständig gebaut: 1080145 Bytes Flash von 3342336 Bytes (32,3 %) und 113684 Bytes statischer RAM von 327680 Bytes (34,7 %).
+- Firmware 0.3.0 erfolgreich über COM5 übertragen; Hashprüfung aller geschriebenen Bereiche bestanden.
+- WLAN-Verbindung am Gerät erfolgreich; Moonraker unter dem konfigurierten lokalen Host über `/websocket` verbunden und verfügbare Statusobjekte abonniert.
+- Der anfängliche HTTP-403-Handshakefehler wurde auf den Bibliotheksstandard `Origin: file://` zurückgeführt. Nach explizitem Entfernen dieses optionalen Headers verbindet sich der Moonraker-WebSocket erfolgreich.
+- Nutzer bestätigt Klipper-Status `bereit` sowie plausible Hotend- und Heizbetttemperaturen, die sich laufend aktualisieren.
+- Reconnect-Test bestanden: WLAN am laufenden Panel gezielt einmal getrennt; Firmware markierte die Verbindung als getrennt, baute WLAN und WebSocket selbstständig neu auf und abonnierte die Statusobjekte erneut. Kein Panel-Neustart und kein Druckerbefehl erforderlich.
+- Bereinigten Endstand ohne temporären Testauslöser erneut gebaut, hochgeladen und per Bootlog geprüft: WLAN verbunden, Moonraker verbunden, Statusobjekte abonniert, Touch `OK`, I²C-Fehlerzähler 0.
 
 Hosttest reproduzieren (Linux mit g++ oder entsprechend eingerichteter C++-Umgebung):
 
@@ -35,8 +42,9 @@ Die Stubs werden ausschließlich für diesen Hosttest verwendet. Sie ersetzen ke
 
 ## Noch offen
 
-- Stabilität unter WLAN-Last; WLAN ist in diesem Test noch nicht eingebunden.
+- Mehrstündige Stabilität unter dauerhaftem WLAN-/Moonraker-Betrieb.
+- Read-only-Anzeige während eines echten Druckjobs einschließlich Dateiname und Fortschritt.
 
-Das Projekt erzeugt ein Firmware-Binary, ist aber noch keine am Gerät bestätigte Firmware.
+Firmware 0.3.0 ist auf der Zielhardware bestätigt. Druckersteuernde Aktionen sind weiterhin nicht implementiert.
 
 PlatformIO-Konvertierung: main.cpp statt Arduino-Sketch; Aufrufreihenfolge der Funktionen geprüft (keine automatisch erzeugten Arduino-Prototypen erforderlich). Lokale Bibliotheken und LVGL-Konfigurationspfad angepasst. Plattformmanifest 6.4.0 geprüft: verwendet Arduino-ESP32-Paket ~3.20011.0. Vollständiger Build am 06.09.2026 erfolgreich durchgeführt.

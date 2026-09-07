@@ -1,8 +1,8 @@
 # ESP32-Klipper-Touchdisplay
 
-Firmwarebasis 0.2.0 · Windows, VS Code und PlatformIO · GUITION ESP32-4848S040C_I
+Firmware 0.3.0 · Windows, VS Code und PlatformIO · GUITION ESP32-4848S040C_I
 
-Eigene lokale Touchoberfläche für den Ender-3 mit Klipper. Die aktuelle modulare Firmwarebasis enthält eine Hardwaretestseite und eine Systemdiagnoseseite. WLAN/Moonraker und Druckeraktionen folgen später.
+Eigene lokale Touchoberfläche für den Ender-3 mit Klipper. Die aktuelle Firmware zeigt über WLAN und Moonraker den Livezustand des Druckers an. Hardwaretest und Systemdiagnose bleiben als eigene Seiten erhalten. Druckeraktionen sind noch nicht implementiert.
 
 ## Start unter Windows
 
@@ -37,6 +37,8 @@ Falls der automatische Flashmodus scheitert: am Board BOOT halten, RESET kurz dr
 | Partition | default_8MB.csv; nutzt zunächst einen Teil des 16-MB-Flashs |
 | LVGL | 8.3.9 aus Herstellerpaket |
 | Arduino_GFX | 1.2.9 aus Herstellerpaket |
+| ArduinoJson | 6.21.5 aus der PlatformIO Registry |
+| WebSockets | 2.4.1 aus der PlatformIO Registry |
 | Touch | eigener SafeGT911-Treiber |
 
 PlatformIO ist die Buildumgebung; Arduino bleibt hier das Firmwareframework. Keine Arduino IDE und keine globale Sketchbook-Umschaltung erforderlich. Die tatsächlich am Board erkannte Speichergröße muss im Bootlog bestätigt werden.
@@ -51,7 +53,11 @@ Quellen für die Konfiguration: [PlatformIO-Plattformmanifest v6.4.0](https://gi
 |---|---|
 | src/main.cpp | Anwendungsstart, zyklische Dienste und Statuslogging |
 | include/BoardHardware.h und src/BoardHardware.cpp | Display, Touch, Backlight und LVGL-Treiberanbindung |
-| include/HardwareTestUi.h und src/HardwareTestUi.cpp | Hardwaretest- und Systemdiagnoseseite mit Navigation |
+| include/HardwareTestUi.h und src/HardwareTestUi.cpp | Klipper-Status-, Hardwaretest- und Systemdiagnoseseite mit Navigation |
+| include/PrinterState.h und src/PrinterState.cpp | Lokaler Druckerzustand, Gültigkeit und deutsche Statustexte |
+| include/MoonrakerClient.h und src/MoonrakerClient.cpp | Nicht blockierende WLAN-/WebSocket-Verbindung und Read-only-Statusabonnement |
+| include/NetworkConfig.h | Bindet lokale Zugangsdaten ein und prüft die Konfiguration |
+| include/secrets.example.h | Versionierbare Vorlage für WLAN und Moonraker |
 | include/SafeGT911.h | geprüfte Touch-Lesezugriffe, Fehlerbehandlung |
 | include/lv_conf.h | LVGL-Konfiguration |
 | lib/lvgl und lib/Arduino_GFX | Herstellerbibliotheken mit vorhandenen Lizenzdateien |
@@ -63,12 +69,12 @@ Quellen für die Konfiguration: [PlatformIO-Plattformmanifest v6.4.0](https://gi
 
 Das Projekt ist mit [noncon66/esp32-klipper-touchdisplay](https://github.com/noncon66/esp32-klipper-touchdisplay) verbunden. Buildausgaben unter `.pio` bleiben vom Commit ausgeschlossen.
 
-Die `.gitignore` lässt Buildausgaben, lokale IDE-Dateien und vorgesehene Secrets-Dateien aus. Im aktuellen Projekt sind keine WLAN-/Moonraker-Zugangsdaten enthalten. Die mitgelieferten Drittanbieterbibliotheken behalten ihre Lizenzbedingungen; für den eigenen Projektcode ist noch keine öffentliche Lizenz ausgewählt.
+Die `.gitignore` lässt Buildausgaben, lokale IDE-Dateien und `include/secrets.h` aus. Für die lokale Konfiguration `include/secrets.example.h` nach `include/secrets.h` kopieren und dort WLAN sowie Moonraker eintragen. Die echte Secrets-Datei nicht committen; die Vorlage enthält keine Zugangsdaten. Die mitgelieferten Drittanbieterbibliotheken behalten ihre Lizenzbedingungen; für den eigenen Projektcode ist noch keine öffentliche Lizenz ausgewählt.
 
 Die Dokumentation bleibt ein lebendes Projektdokument und wird unter `docs/ESP32-Klipper-Touchdisplay-Projektdokumentation.md` weitergeführt.
 
 ## Prüfung und nächster Schritt
 
-Der Touch-Treiber wurde auf dem Host mit simuliertem I²C getestet. Vollständiger PlatformIO-Build, erster Hardwaretest und die modulare Firmwarebasis 0.2.0 wurden erfolgreich abgeschlossen. Am Gerät bestätigt sind 16 MB Flash, rund 8 MB PSRAM, GT911 auf Adresse 0x5D, Bild, Farben, Touch, Backlight sowie beide LVGL-Seiten und deren Navigation. Details in `docs/VALIDIERUNG.md`.
+Der Touch-Treiber wurde auf dem Host mit simuliertem I²C getestet. Vollständiger PlatformIO-Build, Hardwaretest, modulare Firmwarebasis und Read-only-Moonraker-Anbindung wurden erfolgreich abgeschlossen. Am Gerät bestätigt sind 16 MB Flash, rund 8 MB PSRAM, GT911 auf Adresse 0x5D, Bild, Farben, Touch, Backlight, alle drei LVGL-Seiten, Live-Temperaturen und automatische Wiederverbindung nach einem WLAN-Abbruch. Details in `docs/VALIDIERUNG.md`.
 
-Nach erfolgreichem Build und Upload die Prüfschritte in `docs/Hardwaretest.md` durchführen. Bitte Bootlog und Ergebnis der vier Ecktasten zurückmelden.
+Nächster Projektschritt sind bewusst begrenzte Druckeraktionen. Vorheizen und Cooldown werden erst nach Prüfung der tatsächlich vorhandenen Klipper-Makros ergänzt.
