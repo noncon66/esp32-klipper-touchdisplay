@@ -1,6 +1,6 @@
 # ESP32-Klipper-Touchdisplay – Projektdokumentation
 
-Stand: 04.09.2026 · Version 0.5 · Status: Testfirmware im Quellcode erstellt; Hosttests bestanden, ESP32-Build und Hardwaretest offen
+Stand: 06.09.2026 · Version 0.6 · Status: Hosttests und vollständiger PlatformIO-Build bestanden; Hardwaretest offen
 
 ## 1. Ziel und Geltungsbereich
 
@@ -12,7 +12,7 @@ Diese Datei führt den technischen Arbeitsstand, Entscheidungen, offene Punkte u
 
 Laut Projektübersicht: Ender-3 Classic, BTT SKR Mini E3 V3.0, Raspberry Pi 4, Klipper/Moonraker/Mainsail, Bowden-Extruder, 0,4-mm-Düse und PEI-Oberfläche. CR Touch und BTT S2DW sind geplant/bestellt; ihr Einbau ist in diesem Projekt noch nicht bestätigt.
 
-Inzwischen liegen zusätzlich Operating instructions.zip, Libraries.zip und das Herstellerdemo 1_2_4.0_LvglWidgets.zip vor. Demoquellen und LVGL-Konfiguration sind geprüft; Testfirmware im Quellcode liegt inzwischen vor; ein vollständiger ESP32-Build und aktuelle Klipper-Konfigurationsdateien stehen noch aus. Es wurde weder Hardware geflasht noch eine Verbindung zum Drucker hergestellt.
+Inzwischen liegen zusätzlich Operating instructions.zip, Libraries.zip und das Herstellerdemo 1_2_4.0_LvglWidgets.zip vor. Demoquellen und LVGL-Konfiguration sind geprüft; die Testfirmware wurde am 06.09.2026 vollständig mit PlatformIO kompiliert und gelinkt. Aktuelle Klipper-Konfigurationsdateien stehen noch aus. Es wurde weder Hardware geflasht noch eine Verbindung zum Drucker hergestellt.
 
 ## 3. Sichtung der Quelldateien
 
@@ -175,7 +175,7 @@ Für den unmittelbar nächsten Schritt:
 
 1. Scharfe Fotos der tatsächlichen Platinenrückseite, Aufdrucke und Anschlüsse.
 2. Herstellerpaket: erledigt für den Einstieg; Bibliotheken, Widgets-Demo und Buildhinweise liegen vor. Weitere Demoarchive sind zunächst nicht erforderlich.
-3. Entwicklungsrechner: Windows bestätigt. VS Code und PlatformIO sind festgelegt; Installation/erster Build auf dem Windows-Rechner noch offen.
+3. Entwicklungsrechner: Windows bestätigt. VS Code und PlatformIO sind eingerichtet; der erste vollständige Build wurde am 06.09.2026 erfolgreich abgeschlossen.
 
 Später zur Moonraker-Anbindung: Host/IP und Port, relevante Moonraker-Konfiguration ohne Geheimnisse, `printer.cfg` mit eingebundenen Makros sowie aktueller CR-Touch-Installationsstand. WLAN-Passwörter müssen dafür nicht im Chat geteilt werden.
 
@@ -189,7 +189,7 @@ Später zur Moonraker-Anbindung: Host/IP und Port, relevante Moonraker-Konfigura
 | D04 | Vorgeschlagen: MVP ohne SD, Audio, Relais | Für tägliche Druckerbedienung zunächst unnötig |
 | D05 | Vorgeschlagen: Status vor Aktionen | Zustandsabhängige Bedienung zuverlässig umsetzen |
 
-Teststatus 04.09.2026: Dokumente, Bibliotheksmetadaten und relevante Demoquellen geprüft. Hardware-, Build-, Netzwerk- und Druckertests sind noch nicht durchgeführt. GT911 ist im Demo konfiguriert; tatsächliche Speicherbestückung, Touch-Erkennung und mechanische Maße sind am Gerät zu bestätigen.
+Teststatus 06.09.2026: Dokumente, Bibliotheksmetadaten und relevante Demoquellen geprüft. Hosttests und vollständiger PlatformIO-Build bestanden. Hardware-, Netzwerk- und Druckertests sind noch nicht durchgeführt. GT911 ist im Demo konfiguriert; tatsächliche Speicherbestückung, Touch-Erkennung und mechanische Maße sind am Gerät zu bestätigen.
 
 Änderungsprotokoll: Version 0.1 – neun Quelldateien gesichtet, GPIO-Tabelle konsolidiert, Dokumentwidersprüche erfasst, MVP und Meilensteine vorgeschlagen. Künftige Änderungen erhalten Datum, Beleg und Teststatus; bestätigte Ergebnisse ersetzen offene Annahmen.
 
@@ -303,7 +303,7 @@ Buildbasis: PlatformIO espressif32 **6.4.0**, laut eingesehenem Plattformmanifes
 
 Bibliotheken werden für die erste Inbetriebnahme als lokale Quellstände mitgeführt. `.pio`, lokale IDE-Daten und vorbereitete Secrets-Dateinamen sind per `.gitignore` ausgeschlossen. Für eigenen Code ist noch keine öffentliche Lizenz festgelegt. Drittanbieterhinweise bleiben erhalten. Noch keine GitHub-Automatisierung oder Remote-Synchronisation eingerichtet.
 
-Validierung: Plattformmanifest und Boarddefinition aus dem getaggten PlatformIO-Quellstand geprüft, Projektpfade/INI geprüft und Hosttests nach Pfadumstellung erneut ausgeführt. Ein vollständiger PlatformIO-Build, Windows-Upload und Hardwaretest stehen aus. Die Umstellung ist kein Nachweis für eine bereits auf ESP32 kompilierte Firmware.
+Validierung: Plattformmanifest und Boarddefinition aus dem getaggten PlatformIO-Quellstand geprüft, Projektpfade/INI geprüft und Hosttests nach Pfadumstellung erneut ausgeführt. Der vollständige PlatformIO-Build wurde am 06.09.2026 unter Windows erfolgreich ausgeführt. Windows-Upload und Hardwaretest stehen aus.
 
 Nächster Schritt für den Nutzer: neuen Paketordner in VS Code öffnen, PlatformIO-Erweiterung installieren bzw. initialisieren lassen, **Build** starten. Danach Upload/Monitor und Hardwareabnahme. Repository-Link liegt vor. Als Nächstes das Repository unter Windows klonen und den vorbereiteten PlatformIO-Projektinhalt in dessen Wurzel übernehmen; vorhandene Dateien vorher vergleichen.
 
@@ -314,8 +314,21 @@ Nächster Schritt für den Nutzer: neuen Paketordner in VS Code öffnen, Platfor
 
 Stand 04.09.2026, vom Nutzer bestätigt: **https://github.com/noncon66/esp32-klipper-touchdisplay**.
 
-Repository-Name: `esp32-klipper-touchdisplay`, Eigentümer: `noncon66`. Der Link ist die vorgesehene Adresse für die weitere Quellcodearbeit. Inhalt, Standardbranch und Sichtbarkeit sind nicht geprüft: Der Webabruf schlug mit einer technischen Zugriffsblockade fehl; daraus folgt nicht, dass das Repository privat oder leer ist.
+Repository-Name: `esp32-klipper-touchdisplay`, Eigentümer: `noncon66`. Der lokale Arbeitsstand ist mit `origin/main` unter dieser Adresse verbunden. Der Standardbranch ist `main`; vor Beginn des Builds war der Arbeitsbaum sauber und mit `origin/main` synchronisiert. Die Sichtbarkeit des Repositorys wurde nicht geprüft.
 
-Keine Dateien wurden zu GitHub übertragen. Der bereitgestellte PlatformIO-Quellstand bleibt Paket 0.1.1. Nächster Schritt unter Windows: Repository in VS Code klonen, Paketinhalt auf Wurzelebene mit bestehenden Dateien abgleichen, aktuelle Projektdokumentation unter `docs/` übernehmen und PlatformIO Build starten. Die Datei `platformio.ini` muss direkt im geöffneten Repositoryordner liegen.
+Der bereitgestellte PlatformIO-Quellstand wurde in das lokale Repository übernommen und liegt auf `main`. Die Datei `platformio.ini` befindet sich direkt im geöffneten Repositoryordner. Der Build wurde inzwischen erfolgreich ausgeführt; Upload und Hardwaretest bleiben offen.
 
 Änderungsprotokoll 0.5 / 04.09.2026: Vom Nutzer angelegtes GitHub-Repository vermerkt; Linkanforderung erledigt; tatsächliche Synchronisation und Repositoryprüfung bleiben offen. Keine Firmwareänderung.
+
+
+## 18. Erster vollständiger PlatformIO-Build
+
+Am 06.09.2026 wurde die Umgebung `guition_touchtest` unter Windows mit PlatformIO Core 6.2.0 vollständig kompiliert und gelinkt. Verwendet wurden wie festgelegt Platform `espressif32` 6.4.0, Arduino-ESP32 2.0.11, Arduino_GFX 1.2.9 und LVGL 8.3.9. `firmware.elf`, `firmware.bin`, `bootloader.bin` und `partitions.bin` wurden erfolgreich erzeugt.
+
+Buildgröße: 497125 Bytes Flash von 3342336 Bytes (14,9 %) und 86780 Bytes statischer RAM von 327680 Bytes (26,5 %). Der Build meldete zwei `const`-Qualifier-Warnungen innerhalb der unveränderten LVGL-8.3.9-Quellen; im eigenen Projektcode wurden keine Compilerfehler gemeldet.
+
+Die lokale PlatformIO-Installation war zunächst unvollständig: In der virtuellen Umgebung fehlte PlatformIO Core und die portable Python-3.11.7-Standardbibliothek war entfernt. Core und offizielle portable Runtime wurden wiederhergestellt. Diese Reparatur betrifft die lokale Entwicklungsumgebung und keine Repository-Datei.
+
+Der erfolgreiche Build bestätigt Compiler-, Bibliotheks- und Linkkompatibilität, aber nicht die elektrische oder funktionale Eignung am Gerät. Nächster Schritt: Display per USB-Datenkabel anschließen, COM-Port prüfen, Firmware hochladen, seriellen Bootlog aufzeichnen und die Abnahme in `docs/Hardwaretest.md` durchführen.
+
+Änderungsprotokoll 0.6 / 06.09.2026: Ersten vollständigen PlatformIO-Build bestanden; Speicherbelegung und lokale Toolchain-Reparatur dokumentiert; Repository-Verbindung bestätigt. Hardwaretest bleibt offen.

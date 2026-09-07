@@ -57,18 +57,16 @@ Quellen für die Konfiguration: [PlatformIO-Plattformmanifest v6.4.0](https://gi
 | docs/ | Projektdokumentation, Hardwaretest und Validierung |
 | tests/ | Hosttests mit simuliertem I²C, separat von PlatformIO-Firmwarebuild |
 
-## GitHub vorbereiten
+## Repository
 
-Dieses Paket ist bereit, in dein noch anzulegendes Repository übernommen zu werden. Der Repository-Name könnte `ESP32-Klipper-Touchdisplay` sein. Im Repository sollen `platformio.ini`, `src`, `include`, `lib`, `docs`, `tests`, README und `.gitignore` liegen.
-
-Am einfachsten: leeres Repository auf GitHub anlegen, in VS Code klonen, Paketinhalt in dessen Wurzel kopieren und Änderungen über die Quellcodeverwaltung committen. Zuerst prüfen, dass `.pio` nicht zum Commit gehört. Der Push erfolgt durch dich; es wurde noch kein Repository erstellt oder veröffentlicht.
+Das Projekt ist mit [noncon66/esp32-klipper-touchdisplay](https://github.com/noncon66/esp32-klipper-touchdisplay) verbunden. Buildausgaben unter `.pio` bleiben vom Commit ausgeschlossen.
 
 Die `.gitignore` lässt Buildausgaben, lokale IDE-Dateien und vorgesehene Secrets-Dateien aus. Im aktuellen Projekt sind keine WLAN-/Moonraker-Zugangsdaten enthalten. Die mitgelieferten Drittanbieterbibliotheken behalten ihre Lizenzbedingungen; für den eigenen Projektcode ist noch keine öffentliche Lizenz ausgewählt.
 
-Die Dokumentation bleibt ein lebendes Projektdokument. Sobald das Repository besteht, wird `docs/ESP32-Klipper-Touchdisplay-Projektdokumentation.md` dort als Projektdatei weitergeführt. Künftige Änderungen sollen den Repository-Stand berücksichtigen; aktuell ist noch keine Synchronisation eingerichtet.
+Die Dokumentation bleibt ein lebendes Projektdokument und wird unter `docs/ESP32-Klipper-Touchdisplay-Projektdokumentation.md` weitergeführt.
 
 ## Prüfung und nächster Schritt
 
-Der Touch-Treiber wurde auf dem Host mit simuliertem I²C getestet. Ein vollständiger PlatformIO-Build und ein Hardwaretest sind noch offen. Es gibt kein geprüftes Firmware-Binary. Details in `docs/VALIDIERUNG.md`.
+Der Touch-Treiber wurde auf dem Host mit simuliertem I²C getestet. Der vollständige PlatformIO-Build wurde am 06.09.2026 erfolgreich abgeschlossen. Der Hardwaretest ist noch offen. Details in `docs/VALIDIERUNG.md`.
 
 Nach erfolgreichem Build und Upload die Prüfschritte in `docs/Hardwaretest.md` durchführen. Bitte Bootlog und Ergebnis der vier Ecktasten zurückmelden.

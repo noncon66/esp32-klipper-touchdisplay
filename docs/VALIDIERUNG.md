@@ -1,6 +1,6 @@
 # Validierung – Touchtest 0.1.1 (PlatformIO)
 
-Stand: 04.09.2026.
+Stand: 06.09.2026.
 
 ## Erfolgreich durchgeführt
 
@@ -10,6 +10,9 @@ Stand: 04.09.2026.
 - Tests mit simuliertem I²C und Address-/UndefinedBehavior-Sanitizer bestanden: GT911-Erkennung, beide Adressen, falsche Produktkennung, Koordinaten, Randwerte, Loslassen, veralteter Kontakt, ungültige Punktanzahl, kurze Antworten, Busfehler und erneute Erkennung.
 - LeakSanitizer war wegen der Hostumgebung deaktiviert; keine Aussage über einen LeakSanitizer-Test.
 - Paketinhalt und ZIP-Integrität geprüft.
+- Vollständiger PlatformIO-Build der Umgebung `guition_touchtest` unter Windows bestanden: PlatformIO Core 6.2.0, `espressif32` 6.4.0, Arduino-ESP32 2.0.11, Arduino_GFX 1.2.9 und LVGL 8.3.9.
+- Firmware erfolgreich kompiliert und gelinkt; `firmware.bin` erzeugt. Speicherbelegung: 497125 Bytes Flash von 3342336 Bytes (14,9 %) und 86780 Bytes RAM von 327680 Bytes (26,5 %).
+- Zwei Warnungen zum verworfenen `const`-Qualifier stammen aus unveränderten LVGL-8.3.9-Quellen; der Build wurde erfolgreich beendet.
 
 Hosttest reproduzieren (Linux mit g++ oder entsprechend eingerichteter C++-Umgebung):
 
@@ -22,11 +25,9 @@ Die Stubs werden ausschließlich für diesen Hosttest verwendet. Sie ersetzen ke
 
 ## Noch offen
 
-- Vollständiger ESP32-Build und Linktest: Arduino CLI heruntergeladen, aber Installation des Core/der Toolchain wegen nicht erreichbarer Paketquellen aus der CLI gescheitert. Kein Firmware-Binary erzeugt.
-- Windows-Build mit PlatformIO und Arduino-ESP32 2.0.11 und den mitgelieferten Bibliotheken.
 - Display-, Touch-, PSRAM- und PWM-Funktion auf dem tatsächlichen Board.
 - Stabilität unter WLAN-Last; WLAN ist in diesem Test noch nicht eingebunden.
 
-Das Paket ist eine vorbereitete Testfirmware im Quellcode, keine bereits am Gerät bestätigte Firmware.
+Das Projekt erzeugt ein Firmware-Binary, ist aber noch keine am Gerät bestätigte Firmware.
 
-PlatformIO-Konvertierung: main.cpp statt Arduino-Sketch; Aufrufreihenfolge der Funktionen geprüft (keine automatisch erzeugten Arduino-Prototypen erforderlich). Lokale Bibliotheken und LVGL-Konfigurationspfad angepasst. Plattformmanifest 6.4.0 geprüft: verwendet Arduino-ESP32-Paket ~3.20011.0. Kein vollständiger PlatformIO-Build durchgeführt.
+PlatformIO-Konvertierung: main.cpp statt Arduino-Sketch; Aufrufreihenfolge der Funktionen geprüft (keine automatisch erzeugten Arduino-Prototypen erforderlich). Lokale Bibliotheken und LVGL-Konfigurationspfad angepasst. Plattformmanifest 6.4.0 geprüft: verwendet Arduino-ESP32-Paket ~3.20011.0. Vollständiger Build am 06.09.2026 erfolgreich durchgeführt.
