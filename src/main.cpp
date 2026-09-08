@@ -20,12 +20,12 @@ bool ready = false;
 void setup() {
   Serial.begin(115200);
   delay(500);
-  Serial.println("\nESP32-Klipper Statusclient 0.3.0 / Core 2.0.11");
+  Serial.println("\nESP32-Klipper Bedienclient 0.4.0 / Core 2.0.11");
   Serial.printf("Flash: %u Bytes, PSRAM: %u Bytes, freier Heap: %u Bytes\n",
                 ESP.getFlashChipSize(), ESP.getPsramSize(), ESP.getFreeHeap());
 
   if (!board.begin()) return;
-  ui.begin(board, printerState);
+  ui.begin(board, printerState, moonraker);
   moonraker.begin(printerState);
   ready = true;
   Serial.printf("Bereit. Zeichenpuffer: %u Bytes, freier Heap: %u\n",

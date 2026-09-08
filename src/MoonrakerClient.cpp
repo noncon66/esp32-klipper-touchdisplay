@@ -56,6 +56,11 @@ void MoonrakerClient::begin(PrinterState &state) {
 void MoonrakerClient::loop(uint32_t now) {
   if (!NetworkConfig::isComplete()) return;
 
+  if (state_->actionState == ActionState::Pending &&
+      uint32_t(now - actionSentMs_) >= actionTimeoutMs) {
+    failPendingAction("Zeitueberschreitung ohne Moonraker-Antwort");
+  }
+
   if (WiFi.status() != WL_CONNECTED) {
     if (state_->wifi == LinkState::Connected || websocketStarted_) {
       webSocket_.disconnect();
@@ -129,6 +134,9 @@ void MoonrakerClient::handleWebsocketEvent(WStype_t type, uint8_t *payload,
       requestServerInfo();
       break;
     case WStype_DISCONNECTED:
+      if (state_->actionState == ActionState::Pending) {
+        failPendingAction("Verbindung waehrend der Aktion getrennt");
+      }
       state_->moonraker = LinkState::Disconnected;
       state_->klipper = KlipperState::Unknown;
       state_->invalidateLiveData();
@@ -163,6 +171,30 @@ void MoonrakerClient::handleMessage(uint8_t *payload, size_t length) {
   }
 
   const uint32_t id = document["id"] | 0;
+  if (id == pendingActionRequestId_ &&
+      state_->actionState == ActionState::Pending) {
+    if (document.containsKey("error")) {
+      const char *message = document["error"]["message"] | "Moonraker-Fehler";
+      failPendingAction(message);
+    } else {
+      state_->actionState = ActionState::Succeeded;
+      state_->actionMessage = printerActionText(state_->action);
+      state_->actionMessage += " angenommen";
+      state_->actionUpdatedMs = millis();
+      pendingActionRequestId_ = 0;
+      Serial.printf("Aktion bestaetigt: %s\n",
+                    printerActionText(state_->action));
+    }
+    return;
+  }
+
+  if (document.containsKey("error")) {
+    ++state_->protocolErrors;
+    const char *message = document["error"]["message"] | "unbekannt";
+    Serial.printf("Moonraker-Fehler fuer Anfrage %lu: %s\n",
+                  static_cast<unsigned long>(id), message);
+    return;
+  }
   if (id == serverInfoRequestId) {
     const char *klippyState = document["result"]["klippy_state"] | "unknown";
     applyKlipperState(klippyState);
@@ -303,4 +335,83 @@ void MoonrakerClient::applyKlipperState(const char *value) {
   } else {
     state_->klipper = KlipperState::Unknown;
   }
+}
+
+bool MoonrakerClient::runAction(PrinterAction action) {
+  if (!canRunAction(action)) {
+    state_->action = action;
+    state_->actionState = ActionState::Failed;
+    state_->actionMessage = "Aktion im aktuellen Zustand gesperrt";
+    state_->actionUpdatedMs = millis();
+    return false;
+  }
+
+  const char *script = nullptr;
+  switch (action) {
+    case PrinterAction::PreheatPla: script = "PREHEAT_PLA"; break;
+    case PrinterAction::PreheatPetg: script = "PREHEAT_PETG"; break;
+    case PrinterAction::Cooldown: script = "COOLDOWN"; break;
+    case PrinterAction::FirmwareRestart: break;
+    case PrinterAction::None: return false;
+  }
+
+  StaticJsonDocument<256> document;
+  document["jsonrpc"] = "2.0";
+  pendingActionRequestId_ = nextActionRequestId_++;
+  document["id"] = pendingActionRequestId_;
+  if (action == PrinterAction::FirmwareRestart) {
+    document["method"] = "printer.firmware_restart";
+  } else {
+    document["method"] = "printer.gcode.script";
+    document.createNestedObject("params")["script"] = script;
+  }
+
+  String message;
+  serializeJson(document, message);
+  if (!webSocket_.sendTXT(message)) {
+    pendingActionRequestId_ = 0;
+    state_->action = action;
+    state_->actionState = ActionState::Failed;
+    state_->actionMessage = "Aktion konnte nicht gesendet werden";
+    state_->actionUpdatedMs = millis();
+    return false;
+  }
+
+  state_->action = action;
+  state_->actionState = ActionState::Pending;
+  state_->actionMessage = printerActionText(action);
+  state_->actionMessage += " wird ausgefuehrt";
+  state_->actionUpdatedMs = millis();
+  actionSentMs_ = state_->actionUpdatedMs;
+  Serial.printf("Aktion gesendet: %s\n",
+                action == PrinterAction::FirmwareRestart
+                    ? "printer.firmware_restart"
+                    : script);
+  return true;
+}
+
+bool MoonrakerClient::canRunAction(PrinterAction action) const {
+  if (!state_ || action == PrinterAction::None ||
+      state_->moonraker != LinkState::Connected ||
+      state_->actionState == ActionState::Pending) {
+    return false;
+  }
+
+  if (action == PrinterAction::FirmwareRestart) {
+    return state_->klipper == KlipperState::Shutdown ||
+           state_->klipper == KlipperState::Error;
+  }
+
+  if (state_->klipper != KlipperState::Ready || state_->stale) return false;
+  return state_->print != PrintState::Unknown &&
+         state_->print != PrintState::Printing &&
+         state_->print != PrintState::Paused;
+}
+
+void MoonrakerClient::failPendingAction(const char *message) {
+  state_->actionState = ActionState::Failed;
+  state_->actionMessage = message;
+  state_->actionUpdatedMs = millis();
+  pendingActionRequestId_ = 0;
+  Serial.printf("Aktion fehlgeschlagen: %s\n", message);
 }

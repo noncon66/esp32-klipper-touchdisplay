@@ -43,3 +43,14 @@ const char *printStateText(PrintState state) {
   }
   return "unbekannt";
 }
+
+const char *printerActionText(PrinterAction action) {
+  switch (action) {
+    case PrinterAction::None: return "Keine Aktion";
+    case PrinterAction::PreheatPla: return "PLA vorheizen";
+    case PrinterAction::PreheatPetg: return "PETG vorheizen";
+    case PrinterAction::Cooldown: return "Heizungen ausschalten";
+    case PrinterAction::FirmwareRestart: return "Klipper neu verbinden";
+  }
+  return "Unbekannte Aktion";
+}

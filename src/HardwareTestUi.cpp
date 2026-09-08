@@ -10,10 +10,13 @@ void styleScreen(lv_obj_t *screen) {
 }
 }  // namespace
 
-void HardwareTestUi::begin(BoardHardware &board, PrinterState &printerState) {
+void HardwareTestUi::begin(BoardHardware &board, PrinterState &printerState,
+                           MoonrakerClient &moonraker) {
   board_ = &board;
   printerState_ = &printerState;
+  moonraker_ = &moonraker;
   createPrinterScreen();
+  createActionsScreen();
   createTestScreen();
   createSystemScreen();
   lv_scr_load(printerScreen_);
@@ -86,6 +89,33 @@ void HardwareTestUi::update(uint32_t now) {
                           static_cast<unsigned long>(
                               (now - printerState_->lastUpdateMs) / 1000));
   }
+
+  const PrinterAction temperatureActions[] = {
+      PrinterAction::PreheatPla,
+      PrinterAction::PreheatPetg,
+      PrinterAction::Cooldown,
+  };
+  for (size_t i = 0; i < 3; ++i) {
+    lv_obj_t *actionButton = actionButtons_[i];
+    const bool enabled = moonraker_->canRunAction(temperatureActions[i]);
+    if (enabled) {
+      lv_obj_clear_state(actionButton, LV_STATE_DISABLED);
+    } else {
+      lv_obj_add_state(actionButton, LV_STATE_DISABLED);
+    }
+  }
+  if (moonraker_->canRunAction(PrinterAction::FirmwareRestart)) {
+    lv_obj_clear_state(firmwareRestartButton_, LV_STATE_DISABLED);
+  } else {
+    lv_obj_add_state(firmwareRestartButton_, LV_STATE_DISABLED);
+  }
+  lv_label_set_text(actionFeedbackLabel_, printerState_->actionMessage.c_str());
+  if (confirmationAction_ != PrinterAction::None &&
+      !moonraker_->canRunAction(confirmationAction_) &&
+      !lv_obj_has_flag(confirmPanel_, LV_OBJ_FLAG_HIDDEN)) {
+    confirmationAction_ = PrinterAction::None;
+    lv_obj_add_flag(confirmPanel_, LV_OBJ_FLAG_HIDDEN);
+  }
 }
 
 void HardwareTestUi::createPrinterScreen() {
@@ -104,8 +134,49 @@ void HardwareTestUi::createPrinterScreen() {
   lv_obj_set_size(progressBar_, 432, 24);
   lv_bar_set_range(progressBar_, 0, 100);
   freshnessLabel_ = label(printerScreen_, "Daten nicht aktuell", 24, 344);
-  button(printerScreen_, "HARDWARETEST", 24, 400, 208, 48, showTest);
-  button(printerScreen_, "SYSTEM", 248, 400, 208, 48, showSystem);
+  button(printerScreen_, "AKTIONEN", 16, 400, 136, 48, showActions);
+  button(printerScreen_, "HARDWARE", 172, 400, 136, 48, showTest);
+  button(printerScreen_, "SYSTEM", 328, 400, 136, 48, showSystem);
+}
+
+void HardwareTestUi::createActionsScreen() {
+  actionsScreen_ = lv_obj_create(nullptr);
+  styleScreen(actionsScreen_);
+  label(actionsScreen_, "DRUCKER-AKTIONEN", 142, 18);
+  lv_obj_t *notice = label(
+      actionsScreen_,
+      "Heizen nur bei verbundenem, bereitem und inaktivem Drucker.", 24, 48);
+  lv_obj_set_width(notice, 432);
+
+  actionButtons_[0] = button(actionsScreen_, "PLA  210 / 60 C",
+                             24, 82, 432, 52, preheatPlaPressed);
+  actionButtons_[1] = button(actionsScreen_, "PETG  240 / 80 C",
+                             24, 142, 432, 52, preheatPetgPressed);
+  actionButtons_[2] = button(actionsScreen_, "HEIZUNGEN AUSSCHALTEN",
+                             24, 202, 432, 52, cooldownPressed);
+  firmwareRestartButton_ = button(actionsScreen_, "KLIPPER NEU VERBINDEN",
+                                  24, 262, 432, 52,
+                                  firmwareRestartPressed);
+  actionFeedbackLabel_ = label(actionsScreen_, "Noch keine Aktion", 24, 328);
+  lv_obj_set_width(actionFeedbackLabel_, 432);
+  lv_label_set_long_mode(actionFeedbackLabel_, LV_LABEL_LONG_WRAP);
+  button(actionsScreen_, "ZURUECK ZUM STATUS", 120, 414, 240, 46,
+         showPrinter);
+
+  confirmPanel_ = lv_obj_create(actionsScreen_);
+  lv_obj_set_pos(confirmPanel_, 40, 82);
+  lv_obj_set_size(confirmPanel_, 400, 310);
+  lv_obj_set_style_bg_color(confirmPanel_, lv_color_hex(0x1E304A), 0);
+  lv_obj_set_style_border_color(confirmPanel_, lv_color_hex(0xF4B942), 0);
+  lv_obj_set_style_border_width(confirmPanel_, 3, 0);
+  lv_obj_clear_flag(confirmPanel_, LV_OBJ_FLAG_SCROLLABLE);
+  label(confirmPanel_, "AKTION BESTAETIGEN", 96, 26);
+  confirmLabel_ = label(confirmPanel_, "", 24, 82);
+  lv_obj_set_width(confirmLabel_, 352);
+  lv_label_set_long_mode(confirmLabel_, LV_LABEL_LONG_WRAP);
+  button(confirmPanel_, "ABBRECHEN", 24, 226, 160, 52, cancelAction);
+  button(confirmPanel_, "AUSFUEHREN", 216, 226, 160, 52, confirmAction);
+  lv_obj_add_flag(confirmPanel_, LV_OBJ_FLAG_HIDDEN);
 }
 
 void HardwareTestUi::createTestScreen() {
@@ -150,7 +221,7 @@ void HardwareTestUi::createSystemScreen() {
   systemScreen_ = lv_obj_create(nullptr);
   styleScreen(systemScreen_);
   label(systemScreen_, "SYSTEMDIAGNOSE", 155, 30);
-  label(systemScreen_, "Firmware 0.3.0", 178, 66);
+  label(systemScreen_, "Firmware 0.4.0", 178, 66);
   systemTouchLabel_ = label(systemScreen_, "Touch wird gelesen ...", 38, 120);
   systemMemoryLabel_ = label(systemScreen_, "Speicher wird gelesen ...", 230, 120);
   systemUptimeLabel_ = label(systemScreen_, "Laufzeit wird gelesen ...", 38, 260);
@@ -164,6 +235,22 @@ void HardwareTestUi::resetTargets() {
   for (auto *target : targets_) {
     lv_obj_set_style_bg_color(target, lv_color_hex(0x285AB4), 0);
   }
+}
+
+void HardwareTestUi::showActionConfirmation(PrinterAction action) {
+  if (!moonraker_->canRunAction(action)) return;
+  confirmationAction_ = action;
+  if (action == PrinterAction::FirmwareRestart) {
+    lv_label_set_text(confirmLabel_,
+                      "Klipper neu verbinden?\n\nNur ausfuehren, wenn der "
+                      "Drucker eingeschaltet ist.");
+  } else {
+    lv_label_set_text_fmt(confirmLabel_,
+                          "%s?\n\nDie Aktion wirkt direkt am Drucker.",
+                          printerActionText(action));
+  }
+  lv_obj_clear_flag(confirmPanel_, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_move_foreground(confirmPanel_);
 }
 
 lv_obj_t *HardwareTestUi::label(lv_obj_t *parent, const char *text,
@@ -220,6 +307,12 @@ void HardwareTestUi::showPrinter(lv_event_t *event) {
                    180, 0, false);
 }
 
+void HardwareTestUi::showActions(lv_event_t *event) {
+  auto *ui = fromEvent(event);
+  lv_scr_load_anim(ui->actionsScreen_, LV_SCR_LOAD_ANIM_MOVE_LEFT,
+                   220, 0, false);
+}
+
 void HardwareTestUi::showSystem(lv_event_t *event) {
   auto *ui = fromEvent(event);
   lv_scr_load_anim(ui->systemScreen_, LV_SCR_LOAD_ANIM_MOVE_LEFT,
@@ -230,4 +323,34 @@ void HardwareTestUi::showTest(lv_event_t *event) {
   auto *ui = fromEvent(event);
   lv_scr_load_anim(ui->testScreen_, LV_SCR_LOAD_ANIM_MOVE_RIGHT,
                    220, 0, false);
+}
+
+void HardwareTestUi::preheatPlaPressed(lv_event_t *event) {
+  fromEvent(event)->showActionConfirmation(PrinterAction::PreheatPla);
+}
+
+void HardwareTestUi::preheatPetgPressed(lv_event_t *event) {
+  fromEvent(event)->showActionConfirmation(PrinterAction::PreheatPetg);
+}
+
+void HardwareTestUi::cooldownPressed(lv_event_t *event) {
+  fromEvent(event)->showActionConfirmation(PrinterAction::Cooldown);
+}
+
+void HardwareTestUi::firmwareRestartPressed(lv_event_t *event) {
+  fromEvent(event)->showActionConfirmation(PrinterAction::FirmwareRestart);
+}
+
+void HardwareTestUi::confirmAction(lv_event_t *event) {
+  auto *ui = fromEvent(event);
+  const PrinterAction action = ui->confirmationAction_;
+  ui->confirmationAction_ = PrinterAction::None;
+  lv_obj_add_flag(ui->confirmPanel_, LV_OBJ_FLAG_HIDDEN);
+  if (action != PrinterAction::None) ui->moonraker_->runAction(action);
+}
+
+void HardwareTestUi::cancelAction(lv_event_t *event) {
+  auto *ui = fromEvent(event);
+  ui->confirmationAction_ = PrinterAction::None;
+  lv_obj_add_flag(ui->confirmPanel_, LV_OBJ_FLAG_HIDDEN);
 }

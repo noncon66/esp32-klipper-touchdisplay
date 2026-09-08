@@ -1,6 +1,6 @@
 # ESP32-Klipper-Touchdisplay – Projektdokumentation
 
-Stand: 07.09.2026 · Version 1.0 · Status: Read-only-Moonraker-Anbindung mit Firmware 0.3.0 bestätigt
+Stand: 08.09.2026 · Version 1.1 · Status: Erste kontrollierte Druckeraktionen mit Firmware 0.4.0 bestätigt
 
 ## 1. Ziel und Geltungsbereich
 
@@ -12,7 +12,7 @@ Diese Datei führt den technischen Arbeitsstand, Entscheidungen, offene Punkte u
 
 Laut Projektübersicht: Ender-3 Classic, BTT SKR Mini E3 V3.0, Raspberry Pi 4, Klipper/Moonraker/Mainsail, Bowden-Extruder, 0,4-mm-Düse und PEI-Oberfläche. CR Touch und BTT S2DW sind geplant/bestellt; ihr Einbau ist in diesem Projekt noch nicht bestätigt.
 
-Inzwischen liegen zusätzlich Operating instructions.zip, Libraries.zip und das Herstellerdemo 1_2_4.0_LvglWidgets.zip vor. Demoquellen und LVGL-Konfiguration sind geprüft. Firmware 0.3.0 wurde vollständig mit PlatformIO gebaut, auf die Zielhardware geflasht und read-only mit Moonraker verbunden. Aktuelle Klipper-Konfigurationsdateien und die darin tatsächlich vorhandenen Makros stehen für den nächsten Schritt noch aus.
+Inzwischen liegen zusätzlich Operating instructions.zip, Libraries.zip und das Herstellerdemo 1_2_4.0_LvglWidgets.zip vor. Demoquellen und LVGL-Konfiguration sind geprüft. Firmware 0.4.0 wurde vollständig mit PlatformIO gebaut, auf die Zielhardware geflasht und mit Moonraker verbunden. `printer.cfg` bindet die read-only geprüfte Datei `bedienung_macros.cfg` ein; die ersten Temperatur- und Wiederverbindungsaktionen sind bestätigt.
 
 ## 3. Sichtung der Quelldateien
 
@@ -105,7 +105,7 @@ Netzwerkoperationen dürfen Touch und Darstellung nicht blockieren. LVGL-Zugriff
 
 ## 6. Erster nutzbarer Funktionsumfang
 
-Der erste Prototyp umfasst Statusanzeige, Temperaturen, PLA/PETG-Vorheizen und Cooldown. Bewegungen und Kalibrierung folgen erst nach einem stabilen Statusmodell.
+Der erste Prototyp umfasst Statusanzeige, Temperaturen, PLA/PETG-Vorheizen und Cooldown. Diese Funktionen sind mit Firmware 0.4.0 umgesetzt und am Drucker bestätigt. Bewegungen und Kalibrierung folgen erst nach einem stabilen Status- und Aktionsmodell.
 
 | Ausbaustufe | Funktionen |
 |---|---|
@@ -171,11 +171,11 @@ Abbruch und Neustart benötigen eindeutige Bestätigung. `SAVE_CONFIG` ist keine
 
 Die Statusintegration liegt bewusst vor den Steueraktionen: Erst mit verlässlichem Druckerzustand kann das Panel passende Bedienfunktionen freigeben.
 
-Stand 07.09.2026: Schritte 1 bis 4 sind abgeschlossen. Beim Reconnect-Test wurde die WLAN-Verbindung des laufenden Panels einmalig getrennt. WLAN und WebSocket wurden ohne Panel-Neustart automatisch wiederhergestellt, die Statusobjekte erneut abonniert und aktuelle Werte wieder angezeigt. Es wurden keine Druckerbefehle gesendet.
+Stand 08.09.2026: Schritte 1 bis 5 sind abgeschlossen. Der WLAN-Reconnect wurde ohne Panel-Neustart bestätigt. Zusätzlich wurden Klipper-Firmware-Neustart, PLA-/PETG-Vorheizen und Cooldown am Drucker erfolgreich getestet. Die Sollwerte standen nach dem abschließenden Cooldown wieder auf 0 °C.
 
 ## 10. Noch benötigte Informationen
 
-Für den unmittelbar nächsten Schritt werden die relevante Moonraker-/Klipper-Konfiguration ohne Geheimnisse und `printer.cfg` einschließlich eingebundener Makrodateien benötigt. Vorheizen und Cooldown werden nur an tatsächlich vorhandene, geprüfte Makros angebunden. Der aktuelle CR-Touch-Installationsstand bleibt erst für den späteren Kalibrierschritt relevant. WLAN-Passwörter müssen nicht im Chat geteilt werden.
+Für den nächsten Schritt liegt `bedienung_macros.cfg` bereits vor. Vor der praktischen Filament-Abnahme sind noch der reale Bowden-Filamentweg, die gewünschte Entladelänge und ein sicherer beaufsichtigter Testablauf zu bestätigen. Pause, Fortsetzen und Abbrechen werden erst danach anhand der vorhandenen Mainsail-Makros geprüft. Der aktuelle CR-Touch-Installationsstand bleibt erst für den späteren Kalibrierschritt relevant. WLAN-Passwörter müssen nicht im Chat geteilt werden.
 
 ## 11. Entscheidungs- und Testprotokoll
 
@@ -379,3 +379,22 @@ Für die Reconnect-Abnahme wurde ausschließlich in einer temporären Testfirmwa
 Nächster Schritt ist Projektschritt 5: tatsächlich vorhandene Vorheiz- und Cooldown-Makros aus der Klipper-Konfiguration prüfen, eine eng begrenzte Aktionsschnittstelle mit Rückmeldung entwerfen und erst danach steuernde UI-Elemente hinzufügen.
 
 Änderungsprotokoll 1.0 / 07.09.2026: Firmware 0.3.0 mit lokalem Druckerzustand, sicherer Secrets-Vorlage, nicht blockierender WLAN-/Moonraker-Verbindung und dritter LVGL-Statusseite umgesetzt. Origin-403 diagnostiziert und behoben. Livewerte, Verbindungsabbruch, automatische Wiederverbindung, erneutes Abonnement, finaler Build und Upload auf Hardware bestanden. Projektschritt 4 abgeschlossen.
+
+
+## 22. Kontrollierte Druckeraktionen 0.4.0
+
+Am 08.09.2026 wurde Projektschritt 5 umgesetzt. Eine vierte LVGL-Seite bietet ausschließlich die fest hinterlegten Aktionen `PREHEAT_PLA`, `PREHEAT_PETG`, `COOLDOWN` und „Klipper neu verbinden“. Beliebige G-Code-Eingaben sind nicht vorgesehen. Jede Aktion verlangt eine zweite, ausdrückliche Bestätigung am Display.
+
+Die vorhandene Klipper-Konfiguration wurde vor der Implementierung read-only über Moonraker geprüft. `printer.cfg` bindet `bedienung_macros.cfg` ein. Darin sind `PREHEAT_PLA` mit 210/60 °C, `PREHEAT_PETG` mit 240/80 °C und `COOLDOWN` vorhanden. Die beiden Vorheizmakros rufen serverseitig `_BEDIENUNG_IDLE` auf und brechen während eines Drucks oder einer Pause ab. Das Hotend ist in Klipper auf maximal 250 °C, das Bett auf maximal 130 °C begrenzt. Die Firmware erlaubt keine frei eingegebenen Temperaturen.
+
+Heizaktionen werden nur freigegeben, wenn Moonraker verbunden, Klipper bereit, der Status aktuell und der Druckzustand bekannt sowie weder `printing` noch `paused` ist. Während eine Anfrage aussteht, sind alle Aktionen gesperrt. Der Client wartet höchstens 15 Sekunden auf die zugehörige JSON-RPC-Antwort, zeigt Serverfehler an und verwirft eine ausstehende Aktion bei Verbindungsverlust. Eine Aktion wird nach Reconnect niemals automatisch wiederholt.
+
+Für Heizmakros verwendet der Client `printer.gcode.script`. Die zusätzliche Wiederherstellungsaktion verwendet `printer.firmware_restart`. Sie löst das praktische Problem, dass Klipper nach dem Einschalten einer zuvor stromlosen Drucker-MCU im Zustand `shutdown` verbleibt. Der Knopf ist ausschließlich bei verbundenem Moonraker und Klipper-Zustand `shutdown` oder `error` aktiv; bei `ready` ist er gesperrt. Der Nutzer bestätigte, dass Klipper damit ohne Mainsail wieder auf `ready` wechselt.
+
+Firmware 0.4.0 wurde erfolgreich gebaut und über COM5 aufgespielt. Endgültige Speicherbelegung: 1083649 Bytes Flash von 3342336 Bytes (32,4 %) und 113764 Bytes statischer RAM von 327680 Bytes (34,7 %). Boot, WLAN, Moonraker und Statusabonnement waren erfolgreich; Touch blieb `OK` und der I²C-Fehlerzähler 0.
+
+Die praktische Abnahme bestätigte die Bestätigungsdialoge, PLA 210/60 °C, PETG 240/80 °C und Cooldown. Moonrakers G-Code-Verlauf zeigte die erwartete Reihenfolge. Nach dem abschließenden Cooldown standen Hotend und Heizbett wieder auf Sollwert 0 °C; Klipper meldete `ready` und `print_stats` meldete `standby`. Absichtlich erzeugte Moonraker-Fehler und der 15-Sekunden-Timeout bleiben als gezielte Negativtests offen.
+
+Nächster Schritt ist Projektschritt 6. Vor Filament-, Bewegungs- oder Druckjob-Aktionen werden die vorhandenen Makros und ihre serverseitigen Sperren einzeln geprüft. Wegen des langen Bowden-Rückzugs und echter mechanischer Bewegung werden Laden und Entladen getrennt und unter Aufsicht eingeführt.
+
+Änderungsprotokoll 1.1 / 08.09.2026: Firmware 0.4.0 mit bestätigungspflichtiger, fest begrenzter Aktionsschnittstelle ergänzt. Temperaturgrenzen und Klipper-Makros geprüft; Zustands-Sperren, Antwortzuordnung, Timeout und Abbruch bei Verbindungsverlust implementiert. Klipper-Firmware-Neustart, PLA/PETG und Cooldown am Gerät bestätigt. Projektschritt 5 abgeschlossen.

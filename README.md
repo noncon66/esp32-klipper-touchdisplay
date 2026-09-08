@@ -1,8 +1,8 @@
 # ESP32-Klipper-Touchdisplay
 
-Firmware 0.3.0 · Windows, VS Code und PlatformIO · GUITION ESP32-4848S040C_I
+Firmware 0.4.0 · Windows, VS Code und PlatformIO · GUITION ESP32-4848S040C_I
 
-Eigene lokale Touchoberfläche für den Ender-3 mit Klipper. Die aktuelle Firmware zeigt über WLAN und Moonraker den Livezustand des Druckers an. Hardwaretest und Systemdiagnose bleiben als eigene Seiten erhalten. Druckeraktionen sind noch nicht implementiert.
+Eigene lokale Touchoberfläche für den Ender-3 mit Klipper. Die aktuelle Firmware zeigt über WLAN und Moonraker den Livezustand des Druckers an und bietet bestätigungspflichtige Aktionen für PLA-/PETG-Vorheizen, Cooldown sowie einen Klipper-Firmware-Neustart zur Wiederverbindung mit einer später eingeschalteten Drucker-MCU. Hardwaretest und Systemdiagnose bleiben als eigene Seiten erhalten.
 
 ## Start unter Windows
 
@@ -53,9 +53,9 @@ Quellen für die Konfiguration: [PlatformIO-Plattformmanifest v6.4.0](https://gi
 |---|---|
 | src/main.cpp | Anwendungsstart, zyklische Dienste und Statuslogging |
 | include/BoardHardware.h und src/BoardHardware.cpp | Display, Touch, Backlight und LVGL-Treiberanbindung |
-| include/HardwareTestUi.h und src/HardwareTestUi.cpp | Klipper-Status-, Hardwaretest- und Systemdiagnoseseite mit Navigation |
-| include/PrinterState.h und src/PrinterState.cpp | Lokaler Druckerzustand, Gültigkeit und deutsche Statustexte |
-| include/MoonrakerClient.h und src/MoonrakerClient.cpp | Nicht blockierende WLAN-/WebSocket-Verbindung und Read-only-Statusabonnement |
+| include/HardwareTestUi.h und src/HardwareTestUi.cpp | Klipper-Status-, Aktions-, Hardwaretest- und Systemdiagnoseseite mit Navigation und Bestätigungsdialogen |
+| include/PrinterState.h und src/PrinterState.cpp | Lokaler Drucker- und Aktionszustand, Gültigkeit und deutsche Statustexte |
+| include/MoonrakerClient.h und src/MoonrakerClient.cpp | Nicht blockierende WLAN-/WebSocket-Verbindung, Statusabonnement und fest begrenzte Aktionsschnittstelle |
 | include/NetworkConfig.h | Bindet lokale Zugangsdaten ein und prüft die Konfiguration |
 | include/secrets.example.h | Versionierbare Vorlage für WLAN und Moonraker |
 | include/SafeGT911.h | geprüfte Touch-Lesezugriffe, Fehlerbehandlung |
@@ -75,6 +75,6 @@ Die Dokumentation bleibt ein lebendes Projektdokument und wird unter `docs/ESP32
 
 ## Prüfung und nächster Schritt
 
-Der Touch-Treiber wurde auf dem Host mit simuliertem I²C getestet. Vollständiger PlatformIO-Build, Hardwaretest, modulare Firmwarebasis und Read-only-Moonraker-Anbindung wurden erfolgreich abgeschlossen. Am Gerät bestätigt sind 16 MB Flash, rund 8 MB PSRAM, GT911 auf Adresse 0x5D, Bild, Farben, Touch, Backlight, alle drei LVGL-Seiten, Live-Temperaturen und automatische Wiederverbindung nach einem WLAN-Abbruch. Details in `docs/VALIDIERUNG.md`.
+Der Touch-Treiber wurde auf dem Host mit simuliertem I²C getestet. Vollständiger PlatformIO-Build, Hardwaretest, modulare Firmwarebasis, Read-only-Moonraker-Anbindung und erste kontrollierte Druckeraktionen wurden erfolgreich abgeschlossen. Am Gerät bestätigt sind 16 MB Flash, rund 8 MB PSRAM, GT911 auf Adresse 0x5D, Bild, Farben, Touch, Backlight, alle vier LVGL-Seiten, Live-Temperaturen, Reconnect sowie PLA-/PETG-Vorheizen und Cooldown. Details in `docs/VALIDIERUNG.md`.
 
-Nächster Projektschritt sind bewusst begrenzte Druckeraktionen. Vorheizen und Cooldown werden erst nach Prüfung der tatsächlich vorhandenen Klipper-Makros ergänzt.
+Nächster Projektschritt sind Alltagsfunktionen wie Filament laden/entladen sowie später Pause, Fortsetzen und Abbrechen. Vor jeder Erweiterung werden die vorhandenen Klipper-Makros und die nötigen Zustands-Sperren geprüft.

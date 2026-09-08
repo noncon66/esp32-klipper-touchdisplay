@@ -27,6 +27,21 @@ enum class PrintState : uint8_t {
   Error,
 };
 
+enum class PrinterAction : uint8_t {
+  None,
+  PreheatPla,
+  PreheatPetg,
+  Cooldown,
+  FirmwareRestart,
+};
+
+enum class ActionState : uint8_t {
+  Idle,
+  Pending,
+  Succeeded,
+  Failed,
+};
+
 struct TemperatureState {
   float actual = 0.0f;
   float target = 0.0f;
@@ -48,6 +63,10 @@ struct PrinterState {
   bool stale = true;
   uint32_t lastUpdateMs = 0;
   uint32_t protocolErrors = 0;
+  PrinterAction action = PrinterAction::None;
+  ActionState actionState = ActionState::Idle;
+  String actionMessage = "Noch keine Aktion";
+  uint32_t actionUpdatedMs = 0;
 
   void invalidateLiveData();
 };
@@ -55,3 +74,4 @@ struct PrinterState {
 const char *linkStateText(LinkState state);
 const char *klipperStateText(KlipperState state);
 const char *printStateText(PrintState state);
+const char *printerActionText(PrinterAction action);

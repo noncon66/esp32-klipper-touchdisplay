@@ -1,6 +1,6 @@
-# Validierung – Firmware 0.3.0 (PlatformIO)
+# Validierung – Firmware 0.4.0 (PlatformIO)
 
-Stand: 07.09.2026.
+Stand: 08.09.2026.
 
 ## Erfolgreich durchgeführt
 
@@ -30,6 +30,13 @@ Stand: 07.09.2026.
 - Nutzer bestätigt Klipper-Status `bereit` sowie plausible Hotend- und Heizbetttemperaturen, die sich laufend aktualisieren.
 - Reconnect-Test bestanden: WLAN am laufenden Panel gezielt einmal getrennt; Firmware markierte die Verbindung als getrennt, baute WLAN und WebSocket selbstständig neu auf und abonnierte die Statusobjekte erneut. Kein Panel-Neustart und kein Druckerbefehl erforderlich.
 - Bereinigten Endstand ohne temporären Testauslöser erneut gebaut, hochgeladen und per Bootlog geprüft: WLAN verbunden, Moonraker verbunden, Statusobjekte abonniert, Touch `OK`, I²C-Fehlerzähler 0.
+- Vorhandene und eingebundene Makros `PREHEAT_PLA`, `PREHEAT_PETG` und `COOLDOWN` aus `printer.cfg` und `bedienung_macros.cfg` über Moonraker read-only geprüft. Die Vorheizmakros verwenden die serverseitige Druck-/Pause-Sperre `_BEDIENUNG_IDLE`.
+- Konfigurierte Temperaturgrenzen geprüft: Hotend 250 °C, Heizbett 130 °C. Die fest verdrahteten Profile PLA 210/60 °C und PETG 240/80 °C liegen innerhalb dieser Grenzen; freie Temperatureingaben sind nicht implementiert.
+- Offizielle JSON-RPC-Methoden `printer.gcode.script` für die drei Makros und `printer.firmware_restart` für die MCU-Wiederverbindung verwendet. Aktionen werden nicht gespeichert oder nach einem Reconnect wiederholt.
+- Firmware 0.4.0 vollständig gebaut und über COM5 hochgeladen: 1083649 Bytes Flash von 3342336 Bytes (32,4 %) und 113764 Bytes statischer RAM von 327680 Bytes (34,7 %); Hashprüfung bestanden.
+- Klipper-Firmware-Neustart am Display erfolgreich bestätigt: Nach Einschalten der zuvor abgeschalteten Drucker-MCU wechselte Klipper ohne Mainsail von `shutdown` zu `ready`.
+- Nutzer bestätigt Bestätigungsdialoge und erfolgreiche PLA-/PETG-Vorheizaktionen. Moonrakers G-Code-Verlauf enthält `PREHEAT_PLA`, `COOLDOWN`, `PREHEAT_PETG`, `COOLDOWN` in der geprüften Reihenfolge.
+- Cooldown nach beiden Heiztests bestätigt; abschließende Sollwerte für Hotend und Heizbett jeweils 0 °C, Klipper `ready`, Druckzustand `standby`.
 
 Hosttest reproduzieren (Linux mit g++ oder entsprechend eingerichteter C++-Umgebung):
 
@@ -45,6 +52,6 @@ Die Stubs werden ausschließlich für diesen Hosttest verwendet. Sie ersetzen ke
 - Mehrstündige Stabilität unter dauerhaftem WLAN-/Moonraker-Betrieb.
 - Read-only-Anzeige während eines echten Druckjobs einschließlich Dateiname und Fortschritt.
 
-Firmware 0.3.0 ist auf der Zielhardware bestätigt. Druckersteuernde Aktionen sind weiterhin nicht implementiert.
+Firmware 0.4.0 ist auf der Zielhardware einschließlich der ersten kontrollierten Druckeraktionen bestätigt. Erzwungene Moonraker-Fehler- und Timeoutpfade sind implementiert, aber noch nicht durch absichtlich erzeugte Serverfehler praktisch getestet.
 
 PlatformIO-Konvertierung: main.cpp statt Arduino-Sketch; Aufrufreihenfolge der Funktionen geprüft (keine automatisch erzeugten Arduino-Prototypen erforderlich). Lokale Bibliotheken und LVGL-Konfigurationspfad angepasst. Plattformmanifest 6.4.0 geprüft: verwendet Arduino-ESP32-Paket ~3.20011.0. Vollständiger Build am 06.09.2026 erfolgreich durchgeführt.
