@@ -8,6 +8,9 @@ void PrinterState::invalidateLiveData() {
   bed.targetValid = false;
   filenameValid = false;
   progressValid = false;
+  homedAxesValid = false;
+  bedScrewsActive = false;
+  bedScrewsValid = false;
 }
 
 const char *linkStateText(LinkState state) {
@@ -51,6 +54,14 @@ const char *printerActionText(PrinterAction action) {
     case PrinterAction::PreheatPetg: return "PETG vorheizen";
     case PrinterAction::Cooldown: return "Heizungen ausschalten";
     case PrinterAction::FirmwareRestart: return "Klipper neu verbinden";
+    case PrinterAction::LoadPla: return "PLA laden";
+    case PrinterAction::LoadPetg: return "PETG laden";
+    case PrinterAction::UnloadPla: return "PLA entladen";
+    case PrinterAction::HomeAll: return "Alle Achsen homen";
+    case PrinterAction::BedLevelStart: return "Bett leveln starten";
+    case PrinterAction::BedLevelAdjusted: return "Schraube angepasst";
+    case PrinterAction::BedLevelAccept: return "Schraube akzeptiert";
+    case PrinterAction::BedLevelAbort: return "Bett-Leveln abgebrochen";
   }
   return "Unbekannte Aktion";
 }

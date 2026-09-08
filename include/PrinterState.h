@@ -33,6 +33,14 @@ enum class PrinterAction : uint8_t {
   PreheatPetg,
   Cooldown,
   FirmwareRestart,
+  LoadPla,
+  LoadPetg,
+  UnloadPla,
+  HomeAll,
+  BedLevelStart,
+  BedLevelAdjusted,
+  BedLevelAccept,
+  BedLevelAbort,
 };
 
 enum class ActionState : uint8_t {
@@ -67,6 +75,14 @@ struct PrinterState {
   ActionState actionState = ActionState::Idle;
   String actionMessage = "Noch keine Aktion";
   uint32_t actionUpdatedMs = 0;
+  String homedAxes;
+  bool homedAxesValid = false;
+  bool bedScrewsAvailable = false;
+  bool bedScrewsActive = false;
+  bool bedScrewsValid = false;
+  String bedScrewsPhase;
+  int bedScrewsCurrent = -1;
+  int bedScrewsAccepted = 0;
 
   void invalidateLiveData();
 };

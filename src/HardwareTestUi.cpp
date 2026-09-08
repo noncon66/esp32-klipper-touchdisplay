@@ -8,6 +8,14 @@ void styleScreen(lv_obj_t *screen) {
   lv_obj_set_style_bg_color(screen, lv_color_hex(0x101B2B), 0);
   lv_obj_set_style_text_color(screen, lv_color_hex(0xF4F7FB), 0);
 }
+
+void setButtonEnabled(lv_obj_t *button, bool enabled) {
+  if (enabled) {
+    lv_obj_clear_state(button, LV_STATE_DISABLED);
+  } else {
+    lv_obj_add_state(button, LV_STATE_DISABLED);
+  }
+}
 }  // namespace
 
 void HardwareTestUi::begin(BoardHardware &board, PrinterState &printerState,
@@ -17,6 +25,8 @@ void HardwareTestUi::begin(BoardHardware &board, PrinterState &printerState,
   moonraker_ = &moonraker;
   createPrinterScreen();
   createActionsScreen();
+  createEverydayScreen();
+  createBedLevelScreen();
   createTestScreen();
   createSystemScreen();
   lv_scr_load(printerScreen_);
@@ -97,19 +107,74 @@ void HardwareTestUi::update(uint32_t now) {
   };
   for (size_t i = 0; i < 3; ++i) {
     lv_obj_t *actionButton = actionButtons_[i];
-    const bool enabled = moonraker_->canRunAction(temperatureActions[i]);
-    if (enabled) {
-      lv_obj_clear_state(actionButton, LV_STATE_DISABLED);
-    } else {
-      lv_obj_add_state(actionButton, LV_STATE_DISABLED);
-    }
+    setButtonEnabled(actionButton,
+                     moonraker_->canRunAction(temperatureActions[i]));
   }
-  if (moonraker_->canRunAction(PrinterAction::FirmwareRestart)) {
-    lv_obj_clear_state(firmwareRestartButton_, LV_STATE_DISABLED);
-  } else {
-    lv_obj_add_state(firmwareRestartButton_, LV_STATE_DISABLED);
-  }
+  setButtonEnabled(
+      firmwareRestartButton_,
+      moonraker_->canRunAction(PrinterAction::FirmwareRestart));
   lv_label_set_text(actionFeedbackLabel_, printerState_->actionMessage.c_str());
+
+  const PrinterAction everydayActions[] = {
+      PrinterAction::LoadPla,
+      PrinterAction::LoadPetg,
+      PrinterAction::UnloadPla,
+      PrinterAction::HomeAll,
+      PrinterAction::BedLevelStart,
+  };
+  for (size_t i = 0; i < 5; ++i) {
+    setButtonEnabled(everydayActionButtons_[i],
+                     moonraker_->canRunAction(everydayActions[i]));
+  }
+  const char *homed = printerState_->homedAxesValid &&
+                              !printerState_->homedAxes.isEmpty()
+                          ? printerState_->homedAxes.c_str()
+                          : "keine";
+  const int hotend = printerState_->extruder.actualValid
+                         ? static_cast<int>(printerState_->extruder.actual + 0.5f)
+                         : -1;
+  if (hotend >= 0) {
+    lv_label_set_text_fmt(everydayStateLabel_,
+                          "Hotend: %d C  |  Referenziert: %s", hotend, homed);
+  } else {
+    lv_label_set_text_fmt(everydayStateLabel_,
+                          "Hotend: -- C  |  Referenziert: %s", homed);
+  }
+  lv_label_set_text(everydayFeedbackLabel_,
+                    printerState_->actionMessage.c_str());
+
+  const PrinterAction bedLevelActions[] = {
+      PrinterAction::BedLevelAdjusted,
+      PrinterAction::BedLevelAccept,
+      PrinterAction::BedLevelAbort,
+  };
+  for (size_t i = 0; i < 3; ++i) {
+    setButtonEnabled(bedLevelButtons_[i],
+                     moonraker_->canRunAction(bedLevelActions[i]));
+  }
+  setButtonEnabled(bedLevelBackButton_, !printerState_->bedScrewsActive);
+  if (!printerState_->bedScrewsAvailable) {
+    lv_label_set_text(bedLevelStatusLabel_,
+                      "Bett-Schrauben-Assistent nicht konfiguriert.");
+  } else if (printerState_->bedScrewsValid &&
+             printerState_->bedScrewsActive) {
+    const char *phase = printerState_->bedScrewsPhase == "fine"
+                            ? "Feineinstellung"
+                            : "Grobeinstellung";
+    lv_label_set_text_fmt(
+        bedLevelStatusLabel_,
+        "%s\nSchraube %d von 4  |  akzeptiert: %d",
+        phase, printerState_->bedScrewsCurrent + 1,
+        printerState_->bedScrewsAccepted);
+  } else if (printerState_->actionState == ActionState::Pending &&
+             printerState_->action == PrinterAction::BedLevelStart) {
+    lv_label_set_text(bedLevelStatusLabel_,
+                      "Achsen werden referenziert; Assistent startet ...");
+  } else {
+    lv_label_set_text(bedLevelStatusLabel_,
+                      "Assistent nicht aktiv oder abgeschlossen.");
+  }
+
   if (confirmationAction_ != PrinterAction::None &&
       !moonraker_->canRunAction(confirmationAction_) &&
       !lv_obj_has_flag(confirmPanel_, LV_OBJ_FLAG_HIDDEN)) {
@@ -160,15 +225,16 @@ void HardwareTestUi::createActionsScreen() {
   actionFeedbackLabel_ = label(actionsScreen_, "Noch keine Aktion", 24, 328);
   lv_obj_set_width(actionFeedbackLabel_, 432);
   lv_label_set_long_mode(actionFeedbackLabel_, LV_LABEL_LONG_WRAP);
-  button(actionsScreen_, "ZURUECK ZUM STATUS", 120, 414, 240, 46,
-         showPrinter);
+  button(actionsScreen_, "ALLTAG", 24, 414, 208, 46, showEveryday);
+  button(actionsScreen_, "STATUS", 248, 414, 208, 46, showPrinter);
 
-  confirmPanel_ = lv_obj_create(actionsScreen_);
+  confirmPanel_ = lv_obj_create(lv_layer_top());
   lv_obj_set_pos(confirmPanel_, 40, 82);
   lv_obj_set_size(confirmPanel_, 400, 310);
   lv_obj_set_style_bg_color(confirmPanel_, lv_color_hex(0x1E304A), 0);
   lv_obj_set_style_border_color(confirmPanel_, lv_color_hex(0xF4B942), 0);
   lv_obj_set_style_border_width(confirmPanel_, 3, 0);
+  lv_obj_set_style_text_color(confirmPanel_, lv_color_hex(0xF4F7FB), 0);
   lv_obj_clear_flag(confirmPanel_, LV_OBJ_FLAG_SCROLLABLE);
   label(confirmPanel_, "AKTION BESTAETIGEN", 96, 26);
   confirmLabel_ = label(confirmPanel_, "", 24, 82);
@@ -177,6 +243,55 @@ void HardwareTestUi::createActionsScreen() {
   button(confirmPanel_, "ABBRECHEN", 24, 226, 160, 52, cancelAction);
   button(confirmPanel_, "AUSFUEHREN", 216, 226, 160, 52, confirmAction);
   lv_obj_add_flag(confirmPanel_, LV_OBJ_FLAG_HIDDEN);
+}
+
+void HardwareTestUi::createEverydayScreen() {
+  everydayScreen_ = lv_obj_create(nullptr);
+  styleScreen(everydayScreen_);
+  label(everydayScreen_, "FILAMENT + BEWEGUNG", 126, 14);
+  everydayStateLabel_ = label(everydayScreen_, "Status wird gelesen ...",
+                               24, 43);
+  everydayActionButtons_[0] = button(everydayScreen_, "PLA LADEN  50 MM",
+                                     24, 78, 432, 50, loadPlaPressed);
+  everydayActionButtons_[1] = button(everydayScreen_, "PETG LADEN  50 MM",
+                                     24, 136, 432, 50, loadPetgPressed);
+  everydayActionButtons_[2] = button(everydayScreen_, "PLA ENTLADEN  450 MM",
+                                     24, 194, 432, 50, unloadPlaPressed);
+  everydayActionButtons_[3] = button(everydayScreen_, "ALLE ACHSEN HOMEN",
+                                     24, 252, 432, 50, homeAllPressed);
+  everydayActionButtons_[4] = button(everydayScreen_, "BETT MANUELL LEVELN",
+                                     24, 310, 432, 50,
+                                     bedLevelStartPressed);
+  everydayFeedbackLabel_ = label(everydayScreen_, "Noch keine Aktion",
+                                  24, 374);
+  lv_obj_set_width(everydayFeedbackLabel_, 432);
+  button(everydayScreen_, "TEMPERATUR", 24, 422, 208, 42, showActions);
+  button(everydayScreen_, "STATUS", 248, 422, 208, 42, showPrinter);
+}
+
+void HardwareTestUi::createBedLevelScreen() {
+  bedLevelScreen_ = lv_obj_create(nullptr);
+  styleScreen(bedLevelScreen_);
+  label(bedLevelScreen_, "BETT MANUELL LEVELN", 126, 18);
+  bedLevelStatusLabel_ = label(bedLevelScreen_, "Assistent startet ...",
+                                24, 62);
+  lv_obj_set_width(bedLevelStatusLabel_, 432);
+  lv_obj_t *instructions = label(
+      bedLevelScreen_,
+      "Papier unter die Duese legen und Schraube auf leichten Widerstand "
+      "einstellen.\n\nANGEPASST: Schraube wurde gedreht.\n"
+      "AKZEPTIERT: Abstand passt ohne weitere Aenderung.",
+      24, 130);
+  lv_obj_set_width(instructions, 432);
+  lv_label_set_long_mode(instructions, LV_LABEL_LONG_WRAP);
+  bedLevelButtons_[0] = button(bedLevelScreen_, "ANGEPASST",
+                               24, 282, 208, 52, bedLevelAdjustedPressed);
+  bedLevelButtons_[1] = button(bedLevelScreen_, "AKZEPTIERT",
+                               248, 282, 208, 52, bedLevelAcceptPressed);
+  bedLevelButtons_[2] = button(bedLevelScreen_, "ABBRECHEN",
+                               24, 350, 208, 52, bedLevelAbortPressed);
+  bedLevelBackButton_ = button(bedLevelScreen_, "ZURUECK",
+                                248, 350, 208, 52, showEveryday);
 }
 
 void HardwareTestUi::createTestScreen() {
@@ -221,7 +336,7 @@ void HardwareTestUi::createSystemScreen() {
   systemScreen_ = lv_obj_create(nullptr);
   styleScreen(systemScreen_);
   label(systemScreen_, "SYSTEMDIAGNOSE", 155, 30);
-  label(systemScreen_, "Firmware 0.4.0", 178, 66);
+  label(systemScreen_, "Firmware 0.5.0", 178, 66);
   systemTouchLabel_ = label(systemScreen_, "Touch wird gelesen ...", 38, 120);
   systemMemoryLabel_ = label(systemScreen_, "Speicher wird gelesen ...", 230, 120);
   systemUptimeLabel_ = label(systemScreen_, "Laufzeit wird gelesen ...", 38, 260);
@@ -244,6 +359,24 @@ void HardwareTestUi::showActionConfirmation(PrinterAction action) {
     lv_label_set_text(confirmLabel_,
                       "Klipper neu verbinden?\n\nNur ausfuehren, wenn der "
                       "Drucker eingeschaltet ist.");
+  } else if (action == PrinterAction::HomeAll) {
+    lv_label_set_text(confirmLabel_,
+                      "Alle Achsen homen?\n\nEnder-3-Reihenfolge: Y, X, Z; "
+                      "danach Z +25 mm. Arbeitsraum freihalten.");
+  } else if (action == PrinterAction::BedLevelStart) {
+    lv_label_set_text(confirmLabel_,
+                      "Bett manuell leveln?\n\nDruckbett leeren. Zuerst "
+                      "werden Y, X und Z gehomt; danach Z +25 mm.");
+  } else if (action == PrinterAction::LoadPla ||
+             action == PrinterAction::LoadPetg) {
+    lv_label_set_text_fmt(confirmLabel_,
+                          "%s?\n\nDuese heizt automatisch; danach bewegt "
+                          "der Extruder 50 mm. Beaufsichtigen.",
+                          printerActionText(action));
+  } else if (action == PrinterAction::UnloadPla) {
+    lv_label_set_text(confirmLabel_,
+                      "PLA 450 mm entladen?\n\nDuese heizt automatisch "
+                      "auf 210 C. Langen Rueckzug beaufsichtigen.");
   } else {
     lv_label_set_text_fmt(confirmLabel_,
                           "%s?\n\nDie Aktion wirkt direkt am Drucker.",
@@ -313,6 +446,18 @@ void HardwareTestUi::showActions(lv_event_t *event) {
                    220, 0, false);
 }
 
+void HardwareTestUi::showEveryday(lv_event_t *event) {
+  auto *ui = fromEvent(event);
+  lv_scr_load_anim(ui->everydayScreen_, LV_SCR_LOAD_ANIM_MOVE_LEFT,
+                   220, 0, false);
+}
+
+void HardwareTestUi::showBedLevel(lv_event_t *event) {
+  auto *ui = fromEvent(event);
+  lv_scr_load_anim(ui->bedLevelScreen_, LV_SCR_LOAD_ANIM_MOVE_LEFT,
+                   220, 0, false);
+}
+
 void HardwareTestUi::showSystem(lv_event_t *event) {
   auto *ui = fromEvent(event);
   lv_scr_load_anim(ui->systemScreen_, LV_SCR_LOAD_ANIM_MOVE_LEFT,
@@ -341,12 +486,51 @@ void HardwareTestUi::firmwareRestartPressed(lv_event_t *event) {
   fromEvent(event)->showActionConfirmation(PrinterAction::FirmwareRestart);
 }
 
+void HardwareTestUi::loadPlaPressed(lv_event_t *event) {
+  fromEvent(event)->showActionConfirmation(PrinterAction::LoadPla);
+}
+
+void HardwareTestUi::loadPetgPressed(lv_event_t *event) {
+  fromEvent(event)->showActionConfirmation(PrinterAction::LoadPetg);
+}
+
+void HardwareTestUi::unloadPlaPressed(lv_event_t *event) {
+  fromEvent(event)->showActionConfirmation(PrinterAction::UnloadPla);
+}
+
+void HardwareTestUi::homeAllPressed(lv_event_t *event) {
+  fromEvent(event)->showActionConfirmation(PrinterAction::HomeAll);
+}
+
+void HardwareTestUi::bedLevelStartPressed(lv_event_t *event) {
+  fromEvent(event)->showActionConfirmation(PrinterAction::BedLevelStart);
+}
+
+void HardwareTestUi::bedLevelAdjustedPressed(lv_event_t *event) {
+  auto *ui = fromEvent(event);
+  ui->moonraker_->runAction(PrinterAction::BedLevelAdjusted);
+}
+
+void HardwareTestUi::bedLevelAcceptPressed(lv_event_t *event) {
+  auto *ui = fromEvent(event);
+  ui->moonraker_->runAction(PrinterAction::BedLevelAccept);
+}
+
+void HardwareTestUi::bedLevelAbortPressed(lv_event_t *event) {
+  auto *ui = fromEvent(event);
+  ui->moonraker_->runAction(PrinterAction::BedLevelAbort);
+}
+
 void HardwareTestUi::confirmAction(lv_event_t *event) {
   auto *ui = fromEvent(event);
   const PrinterAction action = ui->confirmationAction_;
   ui->confirmationAction_ = PrinterAction::None;
   lv_obj_add_flag(ui->confirmPanel_, LV_OBJ_FLAG_HIDDEN);
-  if (action != PrinterAction::None) ui->moonraker_->runAction(action);
+  if (action != PrinterAction::None && ui->moonraker_->runAction(action) &&
+      action == PrinterAction::BedLevelStart) {
+    lv_scr_load_anim(ui->bedLevelScreen_, LV_SCR_LOAD_ANIM_MOVE_LEFT,
+                     220, 0, false);
+  }
 }
 
 void HardwareTestUi::cancelAction(lv_event_t *event) {

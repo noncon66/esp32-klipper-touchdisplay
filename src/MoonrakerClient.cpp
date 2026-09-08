@@ -57,7 +57,7 @@ void MoonrakerClient::loop(uint32_t now) {
   if (!NetworkConfig::isComplete()) return;
 
   if (state_->actionState == ActionState::Pending &&
-      uint32_t(now - actionSentMs_) >= actionTimeoutMs) {
+      uint32_t(now - actionSentMs_) >= pendingActionTimeoutMs_) {
     failPendingAction("Zeitueberschreitung ohne Moonraker-Antwort");
   }
 
@@ -261,6 +261,14 @@ void MoonrakerClient::subscribeToAvailableObjects(JsonArrayConst available) {
   if (hasObject(available, "webhooks")) {
     addFields(objects, "webhooks", {"state"});
   }
+  if (hasObject(available, "toolhead")) {
+    addFields(objects, "toolhead", {"homed_axes"});
+  }
+  state_->bedScrewsAvailable = hasObject(available, "bed_screws");
+  if (state_->bedScrewsAvailable) {
+    addFields(objects, "bed_screws",
+              {"is_active", "state", "current_screw", "accepted_screws"});
+  }
 
   String message;
   serializeJson(document, message);
@@ -315,6 +323,29 @@ void MoonrakerClient::applyStatus(JsonObjectConst status) {
     applyKlipperState(webhooks["state"].as<const char *>());
   }
 
+  JsonObjectConst toolhead = status["toolhead"].as<JsonObjectConst>();
+  if (!toolhead.isNull() && toolhead.containsKey("homed_axes")) {
+    state_->homedAxes = toolhead["homed_axes"].as<const char *>();
+    state_->homedAxesValid = true;
+  }
+
+  JsonObjectConst bedScrews = status["bed_screws"].as<JsonObjectConst>();
+  if (!bedScrews.isNull()) {
+    if (bedScrews.containsKey("is_active")) {
+      state_->bedScrewsActive = bedScrews["is_active"].as<bool>();
+    }
+    if (bedScrews.containsKey("state")) {
+      state_->bedScrewsPhase = bedScrews["state"].as<const char *>();
+    }
+    if (bedScrews.containsKey("current_screw")) {
+      state_->bedScrewsCurrent = bedScrews["current_screw"].as<int>();
+    }
+    if (bedScrews.containsKey("accepted_screws")) {
+      state_->bedScrewsAccepted = bedScrews["accepted_screws"].as<int>();
+    }
+    state_->bedScrewsValid = true;
+  }
+
   state_->stale = false;
   state_->lastUpdateMs = millis();
 }
@@ -352,6 +383,29 @@ bool MoonrakerClient::runAction(PrinterAction action) {
     case PrinterAction::PreheatPetg: script = "PREHEAT_PETG"; break;
     case PrinterAction::Cooldown: script = "COOLDOWN"; break;
     case PrinterAction::FirmwareRestart: break;
+    case PrinterAction::LoadPla: script = "LOAD_PLA"; break;
+    case PrinterAction::LoadPetg: script = "LOAD_PETG"; break;
+    case PrinterAction::UnloadPla: script = "UNLOAD_PLA"; break;
+    case PrinterAction::HomeAll:
+      script = "G28 Y0\n"
+               "G28 X0\n"
+               "G28 Z0\n"
+               "G91\n"
+               "G1 Z25 F600\n"
+               "G90";
+      break;
+    case PrinterAction::BedLevelStart:
+      script = "G28 Y0\n"
+               "G28 X0\n"
+               "G28 Z0\n"
+               "G91\n"
+               "G1 Z25 F600\n"
+               "G90\n"
+               "BED_SCREWS_ADJUST";
+      break;
+    case PrinterAction::BedLevelAdjusted: script = "ADJUSTED"; break;
+    case PrinterAction::BedLevelAccept: script = "ACCEPT"; break;
+    case PrinterAction::BedLevelAbort: script = "ABORT"; break;
     case PrinterAction::None: return false;
   }
 
@@ -383,6 +437,12 @@ bool MoonrakerClient::runAction(PrinterAction action) {
   state_->actionMessage += " wird ausgefuehrt";
   state_->actionUpdatedMs = millis();
   actionSentMs_ = state_->actionUpdatedMs;
+  pendingActionTimeoutMs_ =
+      action == PrinterAction::LoadPla ||
+              action == PrinterAction::LoadPetg ||
+              action == PrinterAction::UnloadPla
+          ? filamentActionTimeoutMs
+          : defaultActionTimeoutMs;
   Serial.printf("Aktion gesendet: %s\n",
                 action == PrinterAction::FirmwareRestart
                     ? "printer.firmware_restart"
@@ -403,9 +463,24 @@ bool MoonrakerClient::canRunAction(PrinterAction action) const {
   }
 
   if (state_->klipper != KlipperState::Ready || state_->stale) return false;
-  return state_->print != PrintState::Unknown &&
-         state_->print != PrintState::Printing &&
-         state_->print != PrintState::Paused;
+  if (state_->print == PrintState::Unknown ||
+      state_->print == PrintState::Printing ||
+      state_->print == PrintState::Paused) {
+    return false;
+  }
+
+  const bool bedLevelStep = action == PrinterAction::BedLevelAdjusted ||
+                            action == PrinterAction::BedLevelAccept ||
+                            action == PrinterAction::BedLevelAbort;
+  if (bedLevelStep) {
+    return state_->bedScrewsAvailable && state_->bedScrewsValid &&
+           state_->bedScrewsActive;
+  }
+  if (state_->bedScrewsActive) return false;
+  if (action == PrinterAction::BedLevelStart) {
+    return state_->bedScrewsAvailable;
+  }
+  return true;
 }
 
 void MoonrakerClient::failPendingAction(const char *message) {

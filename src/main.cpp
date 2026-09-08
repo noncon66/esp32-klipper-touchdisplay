@@ -20,7 +20,7 @@ bool ready = false;
 void setup() {
   Serial.begin(115200);
   delay(500);
-  Serial.println("\nESP32-Klipper Bedienclient 0.4.0 / Core 2.0.11");
+  Serial.println("\nESP32-Klipper Bedienclient 0.5.0 / Core 2.0.11");
   Serial.printf("Flash: %u Bytes, PSRAM: %u Bytes, freier Heap: %u Bytes\n",
                 ESP.getFlashChipSize(), ESP.getPsramSize(), ESP.getFreeHeap());
 

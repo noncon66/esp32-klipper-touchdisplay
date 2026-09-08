@@ -1,6 +1,6 @@
 # ESP32-Klipper-Touchdisplay – Projektdokumentation
 
-Stand: 08.09.2026 · Version 1.1 · Status: Erste kontrollierte Druckeraktionen mit Firmware 0.4.0 bestätigt
+Stand: 08.09.2026 · Version 1.2 · Status: Filament-, Homing- und manuelle Leveling-Aktionen mit Firmware 0.5.0 umgesetzt
 
 ## 1. Ziel und Geltungsbereich
 
@@ -12,7 +12,7 @@ Diese Datei führt den technischen Arbeitsstand, Entscheidungen, offene Punkte u
 
 Laut Projektübersicht: Ender-3 Classic, BTT SKR Mini E3 V3.0, Raspberry Pi 4, Klipper/Moonraker/Mainsail, Bowden-Extruder, 0,4-mm-Düse und PEI-Oberfläche. CR Touch und BTT S2DW sind geplant/bestellt; ihr Einbau ist in diesem Projekt noch nicht bestätigt.
 
-Inzwischen liegen zusätzlich Operating instructions.zip, Libraries.zip und das Herstellerdemo 1_2_4.0_LvglWidgets.zip vor. Demoquellen und LVGL-Konfiguration sind geprüft. Firmware 0.4.0 wurde vollständig mit PlatformIO gebaut, auf die Zielhardware geflasht und mit Moonraker verbunden. `printer.cfg` bindet die read-only geprüfte Datei `bedienung_macros.cfg` ein; die ersten Temperatur- und Wiederverbindungsaktionen sind bestätigt.
+Inzwischen liegen zusätzlich Operating instructions.zip, Libraries.zip und das Herstellerdemo 1_2_4.0_LvglWidgets.zip vor. Demoquellen und LVGL-Konfiguration sind geprüft. Firmware 0.5.0 wurde vollständig mit PlatformIO gebaut, auf die Zielhardware geflasht und mit Moonraker verbunden. `printer.cfg` bindet die read-only geprüfte Datei `bedienung_macros.cfg` ein; Temperatur-, Wiederverbindungs-, Filament-, Homing- und manuelle Leveling-Aktionen sind umgesetzt.
 
 ## 3. Sichtung der Quelldateien
 
@@ -116,6 +116,14 @@ Der erste Prototyp umfasst Statusanzeige, Temperaturen, PLA/PETG-Vorheizen und C
 
 Layoutvorschlag: Statusleiste oben, Temperaturkarten und Druckstatus in der Mitte, wenige große Navigationstasten unten. Startseite, Temperatur, Filament, Bewegung und später Leveling. Während des Drucks stehen Druckstatus und Pause/Fortsetzen im Vordergrund. Deutsche Beschriftung ist der Arbeitsvorschlag.
 
+### Vorgemerkte zukünftige Features
+
+- **Manuelle Kopfbewegung:** geführte X-/Y-/Z-Bewegung mit wählbaren Schrittweiten, angezeigtem Homingstatus und sicheren Achsgrenzen. Bewegungen bleiben bei nicht referenzierten Achsen sowie während eines laufenden oder pausierten Drucks gesperrt. Die vom Nutzer bereitgestellte Werkzeugkopf-Ansicht dient als visuelle Orientierung, wird aber nicht unverändert übernommen.
+- **Auswahl der letzten Druckdateien:** zuletzt verwendete beziehungsweise verfügbare Druckdateien über Moonraker anzeigen und nach ausdrücklicher Bestätigung zum Druck auswählen. Dateiname, Verfügbarkeit und Druckerzustand müssen vor dem Start erneut geprüft werden.
+- **Temperaturkurven:** zeitlicher Verlauf von Ist- und Solltemperatur für Hotend und Heizbett. Abtastrate, Zeitraum und Speicherbedarf werden vor der Umsetzung festgelegt; Netzwerk- und Zeichenlast dürfen die Touchbedienung nicht beeinträchtigen.
+
+Diese Punkte sind als späterer Ausbau vorgemerkt und noch keinem verbindlichen Projektschritt zugeordnet.
+
 ## 7. Moonraker-Verhalten
 
 WebSocket über `/websocket` mit JSON-RPC ist für den laufenden Read-only-Status umgesetzt; HTTP wurde ergänzend zur Diagnose verwendet. Der lokale Zielhost ist als `192.168.178.128:7125` bestätigt. WLAN-Daten und ein optionaler Moonraker-API-Key stehen ausschließlich in der von Git ignorierten Datei `include/secrets.h`; `include/secrets.example.h` dient als Vorlage.
@@ -144,11 +152,11 @@ Die Übersicht benennt gewünschte Funktionen, belegt aber nicht deren Installat
 
 | Vorgeschlagener Makroname | Zweck | Stand |
 |---|---|---|
-| PREHEAT_PLA | Hotend 210 °C, Bett 60 °C | Gewünschtes Profil, Existenz offen |
-| PREHEAT_PETG | Hotend 240 °C, Bett 80 °C | Gewünschtes Profil, Existenz offen |
-| COOLDOWN | Heizungen aus | Existenz offen |
-| LOAD_PLA / UNLOAD_PLA | Aufheizen und Filament bewegen | Länge/Geschwindigkeit und Existenz offen |
-| LOAD_PETG / UNLOAD_PETG | Aufheizen und Filament bewegen | Länge/Geschwindigkeit und Existenz offen |
+| PREHEAT_PLA | Hotend 210 °C, Bett 60 °C | Vorhanden und praktisch bestätigt |
+| PREHEAT_PETG | Hotend 240 °C, Bett 80 °C | Vorhanden und praktisch bestätigt |
+| COOLDOWN | Heizungen aus | Vorhanden und praktisch bestätigt |
+| LOAD_PLA / UNLOAD_PLA | Aufheizen und Filament bewegen | Vorhanden; Laden 50 mm und Entladen 450 mm praktisch bestätigt |
+| LOAD_PETG / UNLOAD_PETG | Aufheizen und Filament bewegen | `LOAD_PETG` vorhanden, aber auf Nutzerwunsch nicht praktisch getestet; `UNLOAD_PETG` nicht vorhanden |
 
 Makronamen sind ein Vorschlag, keine bestätigte Schnittstelle. Temperaturprofile sind Projektvorgaben, keine neu geprüfte Freigabe der Hotendhardware. ASA bleibt bis zur Festlegung passender Temperaturen und Hardwarebedingungen ausgenommen.
 
@@ -171,11 +179,11 @@ Abbruch und Neustart benötigen eindeutige Bestätigung. `SAVE_CONFIG` ist keine
 
 Die Statusintegration liegt bewusst vor den Steueraktionen: Erst mit verlässlichem Druckerzustand kann das Panel passende Bedienfunktionen freigeben.
 
-Stand 08.09.2026: Schritte 1 bis 5 sind abgeschlossen. Der WLAN-Reconnect wurde ohne Panel-Neustart bestätigt. Zusätzlich wurden Klipper-Firmware-Neustart, PLA-/PETG-Vorheizen und Cooldown am Drucker erfolgreich getestet. Die Sollwerte standen nach dem abschließenden Cooldown wieder auf 0 °C.
+Stand 08.09.2026: Schritte 1 bis 5 sind abgeschlossen. In Schritt 6 sind Filamentfunktionen, Ender-3-Homing und der manuelle Bettlevel-Assistent umgesetzt; Pause, Fortsetzen und Druckabbruch fehlen noch. Der WLAN-Reconnect wurde ohne Panel-Neustart bestätigt. Zusätzlich wurden Klipper-Firmware-Neustart, PLA-/PETG-Vorheizen, Cooldown, PLA-Laden, PLA-Entladen, Homing und manuelles Leveling am Drucker erfolgreich getestet. `LOAD_PETG` wurde auf Nutzerwunsch übersprungen.
 
 ## 10. Noch benötigte Informationen
 
-Für den nächsten Schritt liegt `bedienung_macros.cfg` bereits vor. Vor der praktischen Filament-Abnahme sind noch der reale Bowden-Filamentweg, die gewünschte Entladelänge und ein sicherer beaufsichtigter Testablauf zu bestätigen. Pause, Fortsetzen und Abbrechen werden erst danach anhand der vorhandenen Mainsail-Makros geprüft. Der aktuelle CR-Touch-Installationsstand bleibt erst für den späteren Kalibrierschritt relevant. WLAN-Passwörter müssen nicht im Chat geteilt werden.
+Der reale Bowden-Filamentweg und eine Entladelänge von 450 mm sind praktisch bestätigt. Als nächster Teil von Schritt 6 werden Pause, Fortsetzen und Druckabbruch anhand der vorhandenen Mainsail-Makros geprüft. Der aktuelle CR-Touch-Installationsstand bleibt erst für den späteren Kalibrierschritt relevant. WLAN-Passwörter müssen nicht im Chat geteilt werden.
 
 ## 11. Entscheidungs- und Testprotokoll
 
@@ -398,3 +406,20 @@ Die praktische Abnahme bestätigte die Bestätigungsdialoge, PLA 210/60 °C, PET
 Nächster Schritt ist Projektschritt 6. Vor Filament-, Bewegungs- oder Druckjob-Aktionen werden die vorhandenen Makros und ihre serverseitigen Sperren einzeln geprüft. Wegen des langen Bowden-Rückzugs und echter mechanischer Bewegung werden Laden und Entladen getrennt und unter Aufsicht eingeführt.
 
 Änderungsprotokoll 1.1 / 08.09.2026: Firmware 0.4.0 mit bestätigungspflichtiger, fest begrenzter Aktionsschnittstelle ergänzt. Temperaturgrenzen und Klipper-Makros geprüft; Zustands-Sperren, Antwortzuordnung, Timeout und Abbruch bei Verbindungsverlust implementiert. Klipper-Firmware-Neustart, PLA/PETG und Cooldown am Gerät bestätigt. Projektschritt 5 abgeschlossen.
+
+
+## 23. Alltagsaktionen 0.5.0 – Filament, Homing und Leveling
+
+Projektschritt 6 ergänzt eine Seite für Filament und Bewegung. Vorgesehen sind `LOAD_PLA`, `LOAD_PETG`, `UNLOAD_PLA`, Homing und der manuelle Klipper-Bettlevel-Assistent. Die vorhandenen Filamentmakros übernehmen das notwendige Aufheizen selbst; die Bestätigungsdialoge weisen auf Heizung, Extruderbewegung und Beaufsichtigung hin. Die am Drucker bestätigte Entladelänge beträgt 450 mm.
+
+Für den Ender 3 erfolgt das Homing entsprechend der Sicherheitsreihenfolge aus der offiziellen Klipper-Beispielkonfiguration: zuerst Y, danach X und zuletzt Z. Auf Nutzerwunsch hebt die Firmware anschließend den Kopf relativ um 25 mm an und kehrt in den absoluten Koordinatenmodus zurück. Dieselbe Sequenz läuft vor `BED_SCREWS_ADJUST`. Quelle: [Klipper-Beispielkonfiguration für Creality Ender 3 (2018)](https://github.com/Klipper3d/klipper/blob/master/config/printer-creality-ender3-2018.cfg).
+
+Teststatus 08.09.2026: Alle neuen Schaltflächen sind aktiv und ihre Texte werden vollständig dargestellt. Die Folge Y → X → Z → Z+25 mm wurde am Drucker ausgeführt und vom Nutzer bestätigt. Auch `BED_SCREWS_ADJUST` wurde vollständig geprüft: Anfahrt der ersten Schraube, Statusanzeige, Abbruch, die Schritte „ANGEPASST“ und „AKZEPTIERT“, Abschluss und Rückkehr funktionieren. `LOAD_PLA` heizte das Hotend auf 210 °C und transportierte anschließend 50 mm Filament; der Nutzer bestätigte den erfolgreichen Ablauf.
+
+Bekannte und akzeptierte Einschränkung: Die vorhandenen Filamentmakros verwenden das blockierende `M109`. Die installierte Klipper-Konfiguration stellt weder `M108` noch ein eigenes Filament-Abbruchmakro bereit. Klipper nennt zum sofortigen Abbruch eines `M109` nur `M112`, was einen Shutdown mit anschließendem Firmware-Neustart auslöst. Ein Umbau auf nicht blockierende Makros und ein normaler Abbrechen-Knopf wurden besprochen, auf Nutzerwunsch für diesen Stand jedoch nicht umgesetzt. Quelle: [Klipper-FAQ zum Abbruch von M109/M190](https://www.klipper3d.org/FAQ.html#how-do-i-cancel-an-m109m190-wait-for-temperature-request).
+
+Der praktische Test von `LOAD_PETG` wurde auf Nutzerwunsch übersprungen; die Aktion ist implementiert, aber nicht am Drucker abgenommen. `UNLOAD_PLA` heizte das Hotend auf 210 °C und zog das Filament anschließend erfolgreich über die bestätigten 450 mm zurück. Damit ist der Funktionsblock Filament, Homing und manuelles Leveling abgeschlossen. Projektschritt 6 insgesamt bleibt offen, bis Pause, Fortsetzen und Druckabbruch umgesetzt und geprüft sind.
+
+Firmware 0.5.0 wurde erfolgreich gebaut und über COM5 aufgespielt. Endgültige Speicherbelegung: 1087529 Bytes Flash von 3342336 Bytes (32,5 %) und 113868 Bytes statischer RAM von 327680 Bytes (34,7 %). Die Hashprüfung beim Upload war erfolgreich.
+
+Änderungsprotokoll 1.2 / 08.09.2026: Alltagsseite mit PLA-/PETG-Laden, PLA-Entladen, sicherem Ender-3-Homing und geführtem `BED_SCREWS_ADJUST` ergänzt. Zustandsabhängige Sperren, Liveanzeige des Homing- und Levelingstatus sowie längere Timeouts für aufheizende Filamentmakros umgesetzt. PLA-Laden, PLA-Entladen, Homing und manueller Bettlevel-Assistent praktisch bestätigt; `LOAD_PETG` bewusst nicht getestet. Zukünftige Features manuelle Kopfbewegung, letzte Druckdateien und Temperaturkurven vorgemerkt.

@@ -20,7 +20,8 @@ class MoonrakerClient {
   static constexpr uint32_t serverInfoRequestId = 1;
   static constexpr uint32_t objectListRequestId = 2;
   static constexpr uint32_t subscribeRequestId = 3;
-  static constexpr uint32_t actionTimeoutMs = 15000;
+  static constexpr uint32_t defaultActionTimeoutMs = 120000;
+  static constexpr uint32_t filamentActionTimeoutMs = 600000;
   static MoonrakerClient *activeInstance_;
 
   WebSocketsClient webSocket_;
@@ -31,6 +32,7 @@ class MoonrakerClient {
   uint32_t nextActionRequestId_ = 100;
   uint32_t pendingActionRequestId_ = 0;
   uint32_t actionSentMs_ = 0;
+  uint32_t pendingActionTimeoutMs_ = defaultActionTimeoutMs;
 
   void startWifi(uint32_t now);
   void startWebsocket();
