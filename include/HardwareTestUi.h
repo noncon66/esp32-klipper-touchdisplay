@@ -35,6 +35,7 @@ class HardwareTestUi {
   lv_obj_t *filenameLabel_ = nullptr;
   lv_obj_t *freshnessLabel_ = nullptr;
   lv_obj_t *progressBar_ = nullptr;
+  lv_obj_t *printActionButtons_[3]{};
   lv_obj_t *actionButtons_[3]{};
   lv_obj_t *firmwareRestartButton_ = nullptr;
   lv_obj_t *actionFeedbackLabel_ = nullptr;
@@ -85,6 +86,9 @@ class HardwareTestUi {
   static void bedLevelAdjustedPressed(lv_event_t *event);
   static void bedLevelAcceptPressed(lv_event_t *event);
   static void bedLevelAbortPressed(lv_event_t *event);
+  static void pausePrintPressed(lv_event_t *event);
+  static void resumePrintPressed(lv_event_t *event);
+  static void cancelPrintPressed(lv_event_t *event);
   static void confirmAction(lv_event_t *event);
   static void cancelAction(lv_event_t *event);
 };

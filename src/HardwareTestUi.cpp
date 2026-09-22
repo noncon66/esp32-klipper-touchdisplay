@@ -100,6 +100,16 @@ void HardwareTestUi::update(uint32_t now) {
                               (now - printerState_->lastUpdateMs) / 1000));
   }
 
+  const PrinterAction printActions[] = {
+      PrinterAction::PausePrint,
+      PrinterAction::ResumePrint,
+      PrinterAction::CancelPrint,
+  };
+  for (size_t i = 0; i < 3; ++i) {
+    setButtonEnabled(printActionButtons_[i],
+                     moonraker_->canRunAction(printActions[i]));
+  }
+
   const PrinterAction temperatureActions[] = {
       PrinterAction::PreheatPla,
       PrinterAction::PreheatPetg,
@@ -198,10 +208,17 @@ void HardwareTestUi::createPrinterScreen() {
   lv_obj_set_pos(progressBar_, 24, 304);
   lv_obj_set_size(progressBar_, 432, 24);
   lv_bar_set_range(progressBar_, 0, 100);
-  freshnessLabel_ = label(printerScreen_, "Daten nicht aktuell", 24, 344);
-  button(printerScreen_, "AKTIONEN", 16, 400, 136, 48, showActions);
-  button(printerScreen_, "HARDWARE", 172, 400, 136, 48, showTest);
-  button(printerScreen_, "SYSTEM", 328, 400, 136, 48, showSystem);
+  freshnessLabel_ = label(printerScreen_, "Daten nicht aktuell", 24, 336);
+  printActionButtons_[0] = button(printerScreen_, "PAUSE", 16, 360, 136, 42,
+                                  pausePrintPressed);
+  printActionButtons_[1] = button(printerScreen_, "FORTSETZEN", 172, 360,
+                                  136, 42, resumePrintPressed);
+  printActionButtons_[2] = button(printerScreen_, "ABBRUCH", 328, 360, 136,
+                                  42, cancelPrintPressed);
+  lv_obj_set_style_bg_color(printActionButtons_[2], lv_color_hex(0xB4232C), 0);
+  button(printerScreen_, "AKTIONEN", 16, 414, 136, 46, showActions);
+  button(printerScreen_, "HARDWARE", 172, 414, 136, 46, showTest);
+  button(printerScreen_, "SYSTEM", 328, 414, 136, 46, showSystem);
 }
 
 void HardwareTestUi::createActionsScreen() {
@@ -336,7 +353,7 @@ void HardwareTestUi::createSystemScreen() {
   systemScreen_ = lv_obj_create(nullptr);
   styleScreen(systemScreen_);
   label(systemScreen_, "SYSTEMDIAGNOSE", 155, 30);
-  label(systemScreen_, "Firmware 0.5.0", 178, 66);
+  label(systemScreen_, "Firmware 0.6.0", 178, 66);
   systemTouchLabel_ = label(systemScreen_, "Touch wird gelesen ...", 38, 120);
   systemMemoryLabel_ = label(systemScreen_, "Speicher wird gelesen ...", 230, 120);
   systemUptimeLabel_ = label(systemScreen_, "Laufzeit wird gelesen ...", 38, 260);
@@ -377,6 +394,19 @@ void HardwareTestUi::showActionConfirmation(PrinterAction action) {
     lv_label_set_text(confirmLabel_,
                       "PLA 450 mm entladen?\n\nDuese heizt automatisch "
                       "auf 210 C. Langen Rueckzug beaufsichtigen.");
+  } else if (action == PrinterAction::PausePrint) {
+    lv_label_set_text(confirmLabel_,
+                      "Laufenden Druck pausieren?\n\nDer Druckkopf wird mit "
+                      "dem vorhandenen Mainsail-Makro geparkt.");
+  } else if (action == PrinterAction::ResumePrint) {
+    lv_label_set_text(confirmLabel_,
+                      "Pausierten Druck fortsetzen?\n\nDer Druckkopf kehrt "
+                      "zur Druckposition zurueck.");
+  } else if (action == PrinterAction::CancelPrint) {
+    lv_label_set_text(confirmLabel_,
+                      "DRUCK ENDGUELTIG ABBRECHEN?\n\nHeizungen und Luefter "
+                      "werden ausgeschaltet. Fortsetzen ist danach nicht "
+                      "mehr moeglich.");
   } else {
     lv_label_set_text_fmt(confirmLabel_,
                           "%s?\n\nDie Aktion wirkt direkt am Drucker.",
@@ -519,6 +549,18 @@ void HardwareTestUi::bedLevelAcceptPressed(lv_event_t *event) {
 void HardwareTestUi::bedLevelAbortPressed(lv_event_t *event) {
   auto *ui = fromEvent(event);
   ui->moonraker_->runAction(PrinterAction::BedLevelAbort);
+}
+
+void HardwareTestUi::pausePrintPressed(lv_event_t *event) {
+  fromEvent(event)->showActionConfirmation(PrinterAction::PausePrint);
+}
+
+void HardwareTestUi::resumePrintPressed(lv_event_t *event) {
+  fromEvent(event)->showActionConfirmation(PrinterAction::ResumePrint);
+}
+
+void HardwareTestUi::cancelPrintPressed(lv_event_t *event) {
+  fromEvent(event)->showActionConfirmation(PrinterAction::CancelPrint);
 }
 
 void HardwareTestUi::confirmAction(lv_event_t *event) {

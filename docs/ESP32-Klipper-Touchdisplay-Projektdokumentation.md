@@ -1,6 +1,6 @@
 # ESP32-Klipper-Touchdisplay – Projektdokumentation
 
-Stand: 08.09.2026 · Version 1.2 · Status: Filament-, Homing- und manuelle Leveling-Aktionen mit Firmware 0.5.0 umgesetzt
+Stand: 22.09.2026 · Version 1.3 · Status: Pause, Fortsetzen und Druckabbruch mit Firmware 0.6.0 umgesetzt und vom Nutzer praktisch bestätigt
 
 ## 1. Ziel und Geltungsbereich
 
@@ -12,7 +12,7 @@ Diese Datei führt den technischen Arbeitsstand, Entscheidungen, offene Punkte u
 
 Laut Projektübersicht: Ender-3 Classic, BTT SKR Mini E3 V3.0, Raspberry Pi 4, Klipper/Moonraker/Mainsail, Bowden-Extruder, 0,4-mm-Düse und PEI-Oberfläche. CR Touch und BTT S2DW sind geplant/bestellt; ihr Einbau ist in diesem Projekt noch nicht bestätigt.
 
-Inzwischen liegen zusätzlich Operating instructions.zip, Libraries.zip und das Herstellerdemo 1_2_4.0_LvglWidgets.zip vor. Demoquellen und LVGL-Konfiguration sind geprüft. Firmware 0.5.0 wurde vollständig mit PlatformIO gebaut, auf die Zielhardware geflasht und mit Moonraker verbunden. `printer.cfg` bindet die read-only geprüfte Datei `bedienung_macros.cfg` ein; Temperatur-, Wiederverbindungs-, Filament-, Homing- und manuelle Leveling-Aktionen sind umgesetzt.
+Inzwischen liegen zusätzlich Operating instructions.zip, Libraries.zip und das Herstellerdemo 1_2_4.0_LvglWidgets.zip vor. Demoquellen und LVGL-Konfiguration sind geprüft. Firmware 0.5.0 wurde vollständig mit PlatformIO gebaut, auf die Zielhardware geflasht und mit Moonraker verbunden. Auch der 0.6.0-Quellstand wurde erfolgreich gebaut; der Nutzer bestätigt den Praxistest der neuen Druckaktionen. `printer.cfg` bindet die read-only geprüfte Datei `bedienung_macros.cfg` ein; Temperatur-, Wiederverbindungs-, Filament-, Homing-, manuelle Leveling- und Druckaktionen sind umgesetzt.
 
 ## 3. Sichtung der Quelldateien
 
@@ -179,11 +179,11 @@ Abbruch und Neustart benötigen eindeutige Bestätigung. `SAVE_CONFIG` ist keine
 
 Die Statusintegration liegt bewusst vor den Steueraktionen: Erst mit verlässlichem Druckerzustand kann das Panel passende Bedienfunktionen freigeben.
 
-Stand 08.09.2026: Schritte 1 bis 5 sind abgeschlossen. In Schritt 6 sind Filamentfunktionen, Ender-3-Homing und der manuelle Bettlevel-Assistent umgesetzt; Pause, Fortsetzen und Druckabbruch fehlen noch. Der WLAN-Reconnect wurde ohne Panel-Neustart bestätigt. Zusätzlich wurden Klipper-Firmware-Neustart, PLA-/PETG-Vorheizen, Cooldown, PLA-Laden, PLA-Entladen, Homing und manuelles Leveling am Drucker erfolgreich getestet. `LOAD_PETG` wurde auf Nutzerwunsch übersprungen.
+Stand 22.09.2026: Schritte 1 bis 6 sind abgeschlossen. Filamentfunktionen, Ender-3-Homing, der manuelle Bettlevel-Assistent sowie Pause, Fortsetzen und Druckabbruch sind umgesetzt. Der Nutzer hat die drei Druckaktionen am Drucker erfolgreich getestet. Der WLAN-Reconnect wurde ohne Panel-Neustart bestätigt. Auch Klipper-Firmware-Neustart, PLA-/PETG-Vorheizen, Cooldown, PLA-Laden, PLA-Entladen, Homing und manuelles Leveling wurden praktisch bestätigt. `LOAD_PETG` wurde auf Nutzerwunsch übersprungen.
 
 ## 10. Noch benötigte Informationen
 
-Der reale Bowden-Filamentweg und eine Entladelänge von 450 mm sind praktisch bestätigt. Als nächster Teil von Schritt 6 werden Pause, Fortsetzen und Druckabbruch anhand der vorhandenen Mainsail-Makros geprüft. Der aktuelle CR-Touch-Installationsstand bleibt erst für den späteren Kalibrierschritt relevant. WLAN-Passwörter müssen nicht im Chat geteilt werden.
+Der reale Bowden-Filamentweg und eine Entladelänge von 450 mm sind praktisch bestätigt. Pause, Fortsetzen und Druckabbruch wurden anhand der vorhandenen Klipper-Makros umgesetzt und vom Nutzer erfolgreich getestet. Der aktuelle CR-Touch-Installationsstand bleibt erst für den späteren Kalibrierschritt relevant. WLAN-Passwörter müssen nicht im Chat geteilt werden.
 
 ## 11. Entscheidungs- und Testprotokoll
 
@@ -418,8 +418,18 @@ Teststatus 08.09.2026: Alle neuen Schaltflächen sind aktiv und ihre Texte werde
 
 Bekannte und akzeptierte Einschränkung: Die vorhandenen Filamentmakros verwenden das blockierende `M109`. Die installierte Klipper-Konfiguration stellt weder `M108` noch ein eigenes Filament-Abbruchmakro bereit. Klipper nennt zum sofortigen Abbruch eines `M109` nur `M112`, was einen Shutdown mit anschließendem Firmware-Neustart auslöst. Ein Umbau auf nicht blockierende Makros und ein normaler Abbrechen-Knopf wurden besprochen, auf Nutzerwunsch für diesen Stand jedoch nicht umgesetzt. Quelle: [Klipper-FAQ zum Abbruch von M109/M190](https://www.klipper3d.org/FAQ.html#how-do-i-cancel-an-m109m190-wait-for-temperature-request).
 
-Der praktische Test von `LOAD_PETG` wurde auf Nutzerwunsch übersprungen; die Aktion ist implementiert, aber nicht am Drucker abgenommen. `UNLOAD_PLA` heizte das Hotend auf 210 °C und zog das Filament anschließend erfolgreich über die bestätigten 450 mm zurück. Damit ist der Funktionsblock Filament, Homing und manuelles Leveling abgeschlossen. Projektschritt 6 insgesamt bleibt offen, bis Pause, Fortsetzen und Druckabbruch umgesetzt und geprüft sind.
+Der praktische Test von `LOAD_PETG` wurde auf Nutzerwunsch übersprungen; die Aktion ist implementiert, aber nicht am Drucker abgenommen. `UNLOAD_PLA` heizte das Hotend auf 210 °C und zog das Filament anschließend erfolgreich über die bestätigten 450 mm zurück. Damit war der Funktionsblock Filament, Homing und manuelles Leveling abgeschlossen. Pause, Fortsetzen und Druckabbruch folgten mit Firmware 0.6.0.
 
 Firmware 0.5.0 wurde erfolgreich gebaut und über COM5 aufgespielt. Endgültige Speicherbelegung: 1087529 Bytes Flash von 3342336 Bytes (32,5 %) und 113868 Bytes statischer RAM von 327680 Bytes (34,7 %). Die Hashprüfung beim Upload war erfolgreich.
 
 Änderungsprotokoll 1.2 / 08.09.2026: Alltagsseite mit PLA-/PETG-Laden, PLA-Entladen, sicherem Ender-3-Homing und geführtem `BED_SCREWS_ADJUST` ergänzt. Zustandsabhängige Sperren, Liveanzeige des Homing- und Levelingstatus sowie längere Timeouts für aufheizende Filamentmakros umgesetzt. PLA-Laden, PLA-Entladen, Homing und manueller Bettlevel-Assistent praktisch bestätigt; `LOAD_PETG` bewusst nicht getestet. Zukünftige Features manuelle Kopfbewegung, letzte Druckdateien und Temperaturkurven vorgemerkt.
+
+## 24. Druckaktionen 0.6.0 – Pause, Fortsetzen und Abbruch
+
+Auf der Statusseite stehen `PAUSE`, `FORTSETZEN` und `ABBRUCH` mit Bestätigungsdialogen. Die Aktionen senden über Moonraker ausschließlich die vorhandenen Klipper-Befehle `PAUSE`, `RESUME` und `CANCEL_PRINT`. Pause ist nur bei einem laufenden Druck freigegeben, Fortsetzen nur bei einem pausierten Druck und Abbruch in beiden Zuständen. Zusätzlich gelten die bestehenden Verbindung-, Aktualitäts- und Aktionssperren; eine ausstehende Aktion wird nach einem Verbindungsabbruch nicht automatisch wiederholt.
+
+Teststatus 22.09.2026: Der Nutzer bestätigt, dass Pause, Fortsetzen und Druckabbruch am Drucker erfolgreich getestet wurden. Damit ist Projektschritt 6 abgeschlossen. Einzelheiten zum Testdruck und ein serieller Testlog liegen für diese drei Aktionen nicht vor.
+
+Der lokale PlatformIO-Build des 0.6.0-Quellstands war am 22.09.2026 erfolgreich. Speicherbelegung: 1088385 Bytes Flash von 3342336 Bytes (32,6 %) und 113876 Bytes statischer RAM von 327680 Bytes (34,8 %).
+
+Änderungsprotokoll 1.3 / 22.09.2026: Firmware 0.6.0 um bestätigungspflichtige und zustandsabhängig freigegebene Druckaktionen ergänzt; erfolgreichen Praxistest nach Nutzerangabe dokumentiert.

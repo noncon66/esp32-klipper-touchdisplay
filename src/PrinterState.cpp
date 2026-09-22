@@ -62,6 +62,9 @@ const char *printerActionText(PrinterAction action) {
     case PrinterAction::BedLevelAdjusted: return "Schraube angepasst";
     case PrinterAction::BedLevelAccept: return "Schraube akzeptiert";
     case PrinterAction::BedLevelAbort: return "Bett-Leveln abgebrochen";
+    case PrinterAction::PausePrint: return "Druck pausieren";
+    case PrinterAction::ResumePrint: return "Druck fortsetzen";
+    case PrinterAction::CancelPrint: return "Druck abbrechen";
   }
   return "Unbekannte Aktion";
 }

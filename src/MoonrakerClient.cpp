@@ -406,6 +406,9 @@ bool MoonrakerClient::runAction(PrinterAction action) {
     case PrinterAction::BedLevelAdjusted: script = "ADJUSTED"; break;
     case PrinterAction::BedLevelAccept: script = "ACCEPT"; break;
     case PrinterAction::BedLevelAbort: script = "ABORT"; break;
+    case PrinterAction::PausePrint: script = "PAUSE"; break;
+    case PrinterAction::ResumePrint: script = "RESUME"; break;
+    case PrinterAction::CancelPrint: script = "CANCEL_PRINT"; break;
     case PrinterAction::None: return false;
   }
 
@@ -463,6 +466,16 @@ bool MoonrakerClient::canRunAction(PrinterAction action) const {
   }
 
   if (state_->klipper != KlipperState::Ready || state_->stale) return false;
+  if (action == PrinterAction::PausePrint) {
+    return state_->print == PrintState::Printing;
+  }
+  if (action == PrinterAction::ResumePrint) {
+    return state_->print == PrintState::Paused;
+  }
+  if (action == PrinterAction::CancelPrint) {
+    return state_->print == PrintState::Printing ||
+           state_->print == PrintState::Paused;
+  }
   if (state_->print == PrintState::Unknown ||
       state_->print == PrintState::Printing ||
       state_->print == PrintState::Paused) {

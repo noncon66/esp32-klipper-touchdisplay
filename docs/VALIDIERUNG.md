@@ -1,6 +1,6 @@
-# Validierung – Firmware 0.4.0 (PlatformIO)
+# Validierung – Firmware 0.6.0 (PlatformIO)
 
-Stand: 08.09.2026.
+Stand: 22.09.2026.
 
 ## Erfolgreich durchgeführt
 
@@ -37,6 +37,9 @@ Stand: 08.09.2026.
 - Klipper-Firmware-Neustart am Display erfolgreich bestätigt: Nach Einschalten der zuvor abgeschalteten Drucker-MCU wechselte Klipper ohne Mainsail von `shutdown` zu `ready`.
 - Nutzer bestätigt Bestätigungsdialoge und erfolgreiche PLA-/PETG-Vorheizaktionen. Moonrakers G-Code-Verlauf enthält `PREHEAT_PLA`, `COOLDOWN`, `PREHEAT_PETG`, `COOLDOWN` in der geprüften Reihenfolge.
 - Cooldown nach beiden Heiztests bestätigt; abschließende Sollwerte für Hotend und Heizbett jeweils 0 °C, Klipper `ready`, Druckzustand `standby`.
+- Firmware 0.5.0 vollständig gebaut, über COM5 hochgeladen und am Drucker geprüft: PLA-Laden und -Entladen, Homing und manueller Bettlevel-Assistent erfolgreich; `LOAD_PETG` auf Nutzerwunsch nicht praktisch getestet.
+- Nutzer bestätigt am 22.09.2026 den erfolgreichen Praxistest von Pause, Fortsetzen und Druckabbruch mit der 0.6.0-Funktionalität. Einzelheiten zum Testdruck und ein serieller Testlog liegen nicht vor.
+- Lokaler PlatformIO-Build des 0.6.0-Quellstands am 22.09.2026 bestanden: 1088385 Bytes Flash von 3342336 Bytes (32,6 %) und 113876 Bytes statischer RAM von 327680 Bytes (34,8 %).
 
 Hosttest reproduzieren (Linux mit g++ oder entsprechend eingerichteter C++-Umgebung):
 
@@ -52,6 +55,6 @@ Die Stubs werden ausschließlich für diesen Hosttest verwendet. Sie ersetzen ke
 - Mehrstündige Stabilität unter dauerhaftem WLAN-/Moonraker-Betrieb.
 - Read-only-Anzeige während eines echten Druckjobs einschließlich Dateiname und Fortschritt.
 
-Firmware 0.4.0 ist auf der Zielhardware einschließlich der ersten kontrollierten Druckeraktionen bestätigt. Erzwungene Moonraker-Fehler- und Timeoutpfade sind implementiert, aber noch nicht durch absichtlich erzeugte Serverfehler praktisch getestet.
+Die Druckaktionen der 0.6.0-Funktionalität sind nach Nutzerangabe auf der Zielhardware bestätigt. Erzwungene Moonraker-Fehler- und Timeoutpfade sind implementiert, aber noch nicht durch absichtlich erzeugte Serverfehler praktisch getestet.
 
 PlatformIO-Konvertierung: main.cpp statt Arduino-Sketch; Aufrufreihenfolge der Funktionen geprüft (keine automatisch erzeugten Arduino-Prototypen erforderlich). Lokale Bibliotheken und LVGL-Konfigurationspfad angepasst. Plattformmanifest 6.4.0 geprüft: verwendet Arduino-ESP32-Paket ~3.20011.0. Vollständiger Build am 06.09.2026 erfolgreich durchgeführt.

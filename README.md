@@ -75,6 +75,6 @@ Die Dokumentation bleibt ein lebendes Projektdokument und wird unter `docs/ESP32
 
 ## Prüfung und nächster Schritt
 
-Der Touch-Treiber wurde auf dem Host mit simuliertem I²C getestet. Vollständiger PlatformIO-Build, Hardwaretest, modulare Firmwarebasis, Read-only-Moonraker-Anbindung und erste kontrollierte Druckeraktionen wurden erfolgreich abgeschlossen. Am Gerät bestätigt sind 16 MB Flash, rund 8 MB PSRAM, GT911 auf Adresse 0x5D, Bild, Farben, Touch, Backlight, alle vier LVGL-Seiten, Live-Temperaturen, Reconnect sowie PLA-/PETG-Vorheizen und Cooldown. Details in `docs/VALIDIERUNG.md`.
+Der Touch-Treiber wurde auf dem Host mit simuliertem I²C getestet. PlatformIO-Builds, Hardwaretest, modulare Firmwarebasis, Read-only-Moonraker-Anbindung und kontrollierte Druckeraktionen wurden erfolgreich abgeschlossen. Am Gerät bestätigt sind 16 MB Flash, rund 8 MB PSRAM, GT911 auf Adresse 0x5D, Bild, Farben, Touch, Backlight, Live-Temperaturen, Reconnect, PLA-/PETG-Vorheizen, Cooldown, PLA-Laden und -Entladen, Homing, manuelles Bettleveln sowie Pause, Fortsetzen und Abbruch eines Drucks. Details in `docs/VALIDIERUNG.md`.
 
-Nächster Projektschritt sind Alltagsfunktionen wie Filament laden/entladen sowie später Pause, Fortsetzen und Abbrechen. Vor jeder Erweiterung werden die vorhandenen Klipper-Makros und die nötigen Zustands-Sperren geprüft.
+Die Druckaktionen der Firmware 0.6.0 verwenden die vorhandenen Klipper-Makros `PAUSE`, `RESUME` und `CANCEL_PRINT`. Sie sind vom Druckzustand abhängig und erfordern eine Bestätigung am Panel. Als spätere Erweiterungen sind manuelle Kopfbewegung, letzte Druckdateien und Temperaturkurven vorgemerkt.

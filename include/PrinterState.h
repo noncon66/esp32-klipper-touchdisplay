@@ -41,6 +41,9 @@ enum class PrinterAction : uint8_t {
   BedLevelAdjusted,
   BedLevelAccept,
   BedLevelAbort,
+  PausePrint,
+  ResumePrint,
+  CancelPrint,
 };
 
 enum class ActionState : uint8_t {
